@@ -23,3 +23,40 @@ const registerUser = async (req, res) => {
 };
 
 module.exports = { registerUser };
+
+
+
+const { createUser, getUserByPhone } = require('../models/userModel');
+
+const loginUser = async (req, res) => {
+  const { phone, password } = req.body;
+
+  // Validation
+  if (!phone || !password) {
+    return res.status(400).json({
+      message: 'Phone and password are required'
+    });
+  }
+
+  try {
+    const user = await getUserByPhone(phone);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Simple password check (we will improve later)
+    if (user.password !== password) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    res.json({
+      message: 'Login successful',
+      user
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
