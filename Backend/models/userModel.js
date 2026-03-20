@@ -10,3 +10,15 @@ const createUser = async (name, phone, role, password) => {
 };
 
 module.exports = { createUser };
+
+
+
+const getUserByPhone = async (phone) => {
+  const result = await pool.query(
+    'SELECT * FROM users WHERE phone = $1',
+    [phone]
+  );
+  return result.rows[0];
+};
+
+module.exports = { createUser, getUserByPhone };
