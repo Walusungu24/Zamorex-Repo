@@ -2,7 +2,8 @@
 const { createProduct, getProducts } = require('../models/productModel');
 
 const addProduct = async (req, res) => {
-  const { name, type, price, quantity, farmerId } = req.body;
+  const { name, type, price, quantity } = req.body;
+const farmerId = req.user.id;
 
   if (!name || !price || !quantity || !farmerId) {
     return res.status(400).json({
