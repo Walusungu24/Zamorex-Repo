@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
@@ -21,9 +22,19 @@ app.get('/', (req, res) => {
   res.send('Zamorex API is running');
 });
 
-// Server
-const PORT = 5000;
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.message);
+  res.status(500).json({ message: 'Server error' });
+});
+
+// Server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
