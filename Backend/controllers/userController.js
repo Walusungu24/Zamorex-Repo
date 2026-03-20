@@ -13,6 +13,12 @@ const registerUser = async (req, res) => {
     });
   }
 
+ if (role === 'admin') {
+  return res.status(403).json({
+    message: 'Admin creation not allowed'
+  });
+} 
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
