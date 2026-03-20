@@ -5,13 +5,8 @@ const createUser = async (name, phone, role, password) => {
     'INSERT INTO users (name, phone, role, password) VALUES ($1, $2, $3, $4) RETURNING *',
     [name, phone, role, password]
   );
-
   return result.rows[0];
 };
-
-module.exports = { createUser };
-
-
 
 const getUserByPhone = async (phone) => {
   const result = await pool.query(
@@ -21,4 +16,12 @@ const getUserByPhone = async (phone) => {
   return result.rows[0];
 };
 
-module.exports = { createUser, getUserByPhone };
+const getUserById = async (id) => {
+  const result = await pool.query(
+    'SELECT id, name, phone, role FROM users WHERE id = $1',
+    [id]
+  );
+  return result.rows[0];
+};
+
+module.exports = { createUser, getUserByPhone, getUserById };
