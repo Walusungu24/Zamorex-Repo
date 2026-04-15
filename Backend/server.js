@@ -12,10 +12,19 @@ app.use(express.json());
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const { authMiddleware } = require('./middleware/authMiddleware');
 
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Protected Route
+app.get('/api/protected', authMiddleware, (req, res) => {
+  res.json({
+    message: 'Protected route accessed',
+    user: req.user
+  });
+});
 
 // Test route
 app.get('/', (req, res) => {
