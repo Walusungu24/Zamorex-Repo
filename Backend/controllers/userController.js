@@ -1,82 +1,104 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { createUser, getUserByPhone } = require('../models/userModel');
-require('dotenv').config();
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const userModel = require("../models/userModel");
 
-const registerUser = async (req, res) => {
+// Generate JWT token
+const generateToken = (userId, role) => {
+  return jwt.sign({ id: userId, role: role }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+};
+
+// Register new user
+const register = async (req, res) => {
   const { name, phone, role, password } = req.body;
 
+  // Validate required fields
   if (!name || !phone || !role || !password) {
-    return res.status(400).json({
-      message: 'All fields are required'
-    });
+    return res.status(400).json({ message: "All fields are required" });
   }
 
-  if (role === 'admin') {
-    return res.status(403).json({
-      message: 'Admin creation not allowed'
-    });
+  // Validate role
+  if (!["farmer", "buyer"].includes(role)) {
+    return res
+      .status(400)
+      .json({ message: "Invalid role. Choose farmer or buyer" });
   }
 
   try {
+    // Check if user exists
+    const existingUser = await userModel.getUserByPhone(phone);
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "User already exists with this phone number" });
+    }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await createUser(name, phone, role, hashedPassword);
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = newUser;
+    // Create user
+    const user = await userModel.createUser(name, phone, role, hashedPassword);
 
-    res.json({
-      message: 'User registered successfully',
-      user: userWithoutPassword
+    // Generate token
+    const token = generateToken(user.id, user.role);
+
+    res.status(201).json({
+      message: "User registered successfully",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        created_at: user.created_at,
+      },
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-const loginUser = async (req, res) => {
+// Login user
+const login = async (req, res) => {
   const { phone, password } = req.body;
 
   if (!phone || !password) {
-    return res.status(400).json({
-      message: 'Phone and password are required'
-    });
+    return res.status(400).json({ message: "Phone and password are required" });
   }
 
   try {
-    const user = await getUserByPhone(phone);
-
+    // Find user
+    const user = await userModel.getUserByPhone(phone);
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Generate token
+    const token = generateToken(user.id, user.role);
 
     res.json({
-      message: 'Login successful',
+      message: "Login successful",
       token,
-      user: userWithoutPassword
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        created_at: user.created_at,
+      },
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-module.exports = { registerUser, loginUser };
+module.exports = { register, login };
