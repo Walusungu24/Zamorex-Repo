@@ -1,15 +1,17 @@
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 // Create a new product with pending status
 const createProduct = async (name, type, price, quantity, farmerId) => {
   const result = await pool.query(
-    'INSERT INTO products (name, type, price, quantity, farmer_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [name, type, price, quantity, farmerId]
+    `INSERT INTO products (name, type, price, quantity, farmer_id, status) 
+     VALUES ($1, $2, $3, $4, $5, 'pending') 
+     RETURNING *`,
+    [name, type, price, quantity, farmerId],
   );
   return result.rows[0];
 };
 
-// Get products with optional filters (status, farmer_id) and pagination
+// Get products with optional filters and pagination
 const getProducts = async (filters = {}) => {
   const { status, farmer_id, limit = 50, offset = 0 } = filters;
   let query = `
@@ -21,19 +23,16 @@ const getProducts = async (filters = {}) => {
   const values = [];
   let paramCount = 1;
 
-  // Apply status filter if provided
   if (status) {
     query += ` AND p.status = $${paramCount++}`;
     values.push(status);
   }
 
-  // Apply farmer filter if provided
   if (farmer_id) {
     query += ` AND p.farmer_id = $${paramCount++}`;
     values.push(farmer_id);
   }
 
-  // Add pagination
   query += ` ORDER BY p.created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;
   values.push(limit, offset);
 
@@ -41,7 +40,7 @@ const getProducts = async (filters = {}) => {
   return result.rows;
 };
 
-// Get single product with role-based visibility (admin sees all, others see only approved)
+// Get single product with role-based visibility
 const getProductById = async (productId, requesterRole = null) => {
   let query = `
     SELECT p.*, u.name as farmer_name, u.phone as farmer_phone
@@ -50,8 +49,7 @@ const getProductById = async (productId, requesterRole = null) => {
     WHERE p.id = $1
   `;
 
-  // Restrict to approved products for non-admin users
-  if (requesterRole !== 'admin') {
+  if (requesterRole !== "admin") {
     query += ` AND p.status = 'approved'`;
   }
 
@@ -62,8 +60,8 @@ const getProductById = async (productId, requesterRole = null) => {
 // Get all products belonging to a specific farmer
 const getProductsByFarmer = async (farmerId) => {
   const result = await pool.query(
-    'SELECT * FROM products WHERE farmer_id = $1',
-    [farmerId]
+    "SELECT * FROM products WHERE farmer_id = $1 ORDER BY created_at DESC",
+    [farmerId],
   );
   return result.rows;
 };
@@ -71,8 +69,8 @@ const getProductsByFarmer = async (farmerId) => {
 // Delete product only if it belongs to the specified farmer
 const deleteProduct = async (id, farmerId) => {
   const result = await pool.query(
-    'DELETE FROM products WHERE id = $1 AND farmer_id = $2 RETURNING *',
-    [id, farmerId]
+    "DELETE FROM products WHERE id = $1 AND farmer_id = $2 RETURNING *",
+    [id, farmerId],
   );
   return result.rows[0];
 };
@@ -105,7 +103,14 @@ const updateProduct = async (productId, farmerId, updates) => {
     WHERE id = $5 AND farmer_id = $6
     RETURNING *
   `;
-  const result = await pool.query(query, [name, type, price, quantity, productId, farmerId]);
+  const result = await pool.query(query, [
+    name,
+    type,
+    price,
+    quantity,
+    productId,
+    farmerId,
+  ]);
   return result.rows[0];
 };
 
@@ -116,5 +121,5 @@ module.exports = {
   getProductsByFarmer,
   deleteProduct,
   updateProductStatus,
-  updateProduct
+  updateProduct,
 };

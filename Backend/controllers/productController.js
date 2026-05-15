@@ -1,93 +1,110 @@
+const pool = require("../config/db");
 const {
   createProduct,
-  getProducts,
   getProductById,
-  getProductsByFarmer,
   deleteProduct,
-  updateProduct
-} = require('../models/productModel');
+  updateProduct,
+} = require("../models/productModel");
 
 // Farmer only: Add new product (status defaults to 'pending')
 const addProduct = async (req, res) => {
   const { name, type, price, quantity } = req.body;
   const farmerId = req.user.id;
 
-  if (!name || !price || !quantity) {
-    return res.status(400).json({
-      message: 'Name, price, and quantity are required'
-    });
-  }
-
-  if (isNaN(price) || price <= 0) {
-    return res.status(400).json({ message: 'Valid price is required' });
-  }
-
-  if (isNaN(quantity) || quantity < 0) {
-    return res.status(400).json({ message: 'Valid quantity is required' });
-  }
-
   try {
-    const product = await createProduct(name, type || 'other', price, quantity, farmerId);
+    const product = await createProduct(
+      name,
+      type || "other",
+      price,
+      quantity,
+      farmerId,
+    );
     res.json({
-      message: 'Product added successfully',
-      product
+      message: "Product added successfully",
+      product,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get products with role-based visibility and optional filters
+// Get all approved products with pagination and filtering
 const listProducts = async (req, res) => {
   try {
-    const { limit = 50, offset = 0, type, min_price, max_price } = req.query;
-    const filters = { limit, offset };
+    const { type, min_price, max_price, page = 1, limit = 20 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    // Role-based visibility rules
-    if (req.user.role === 'buyer') {
-      filters.status = 'approved';  // Buyers see only approved products
-    } else if (req.user.role === 'farmer') {
-      filters.status = 'approved';  // Public endpoint shows only approved
+    let query = `
+      SELECT p.*, u.name as farmer_name 
+      FROM products p
+      JOIN users u ON p.farmer_id = u.id
+      WHERE p.status = 'approved'
+    `;
+    const values = [];
+    let paramCount = 1;
+
+    // Apply type filter
+    if (type) {
+      query += ` AND p.type = $${paramCount++}`;
+      values.push(type);
     }
 
-    // Apply type filter if provided
-    if (type) filters.type = type;
+    // Get total count for pagination
+    const countQuery = query.replace(
+      "SELECT p.*, u.name as farmer_name",
+      "SELECT COUNT(*) as total",
+    );
+    const countResult = await pool.query(countQuery, values);
+    const total = parseInt(countResult.rows[0].total);
 
-    let products = await getProducts(filters);
+    // Add pagination
+    query += ` ORDER BY p.created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+    values.push(parseInt(limit), offset);
 
-    // Apply price range filters
+    const result = await pool.query(query, values);
+    let products = result.rows;
+
+    // Apply price filters in memory
     if (min_price) {
-      products = products.filter(p => p.price >= parseFloat(min_price));
+      products = products.filter(
+        (p) => parseFloat(p.price) >= parseFloat(min_price),
+      );
     }
     if (max_price) {
-      products = products.filter(p => p.price <= parseFloat(max_price));
+      products = products.filter(
+        (p) => parseFloat(p.price) <= parseFloat(max_price),
+      );
     }
 
     res.json({
       success: true,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(total / parseInt(limit)),
       count: products.length,
-      products
+      products,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("List products error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get single product with role-based visibility
+// Get single product
 const getProduct = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const product = await getProductById(id, req.user.role);
+    const product = await getProductById(id, req.user?.role);
     if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: "Product not found" });
     }
     res.json(product);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -96,12 +113,21 @@ const getMyProducts = async (req, res) => {
   const farmerId = req.user.id;
 
   try {
-    // Get all products without status filter using custom query
-    const products = await getProducts({ farmer_id: farmerId, status: null });
-    res.json(products);
+    const result = await pool.query(
+      `SELECT * FROM products 
+       WHERE farmer_id = $1 
+       ORDER BY created_at DESC`,
+      [farmerId],
+    );
+
+    res.json({
+      success: true,
+      count: result.rows.length,
+      products: result.rows,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Get my products error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -113,12 +139,14 @@ const removeProduct = async (req, res) => {
   try {
     const deleted = await deleteProduct(id, farmerId);
     if (!deleted) {
-      return res.status(404).json({ message: 'Product not found or not yours' });
+      return res
+        .status(404)
+        .json({ message: "Product not found or not yours" });
     }
-    res.json({ message: 'Product deleted successfully' });
+    res.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -128,33 +156,28 @@ const updateProductController = async (req, res) => {
   const { name, type, price, quantity } = req.body;
   const farmerId = req.user.id;
 
-  if (!name && !type && !price && !quantity) {
-    return res.status(400).json({ message: 'At least one field to update is required' });
-  }
-
-  if (price && (isNaN(price) || price <= 0)) {
-    return res.status(400).json({ message: 'Valid price is required' });
-  }
-
-  if (quantity && (isNaN(quantity) || quantity < 0)) {
-    return res.status(400).json({ message: 'Valid quantity is required' });
-  }
-
   try {
-    const updated = await updateProduct(id, farmerId, { name, type, price, quantity });
+    const updated = await updateProduct(id, farmerId, {
+      name,
+      type,
+      price,
+      quantity,
+    });
 
     if (!updated) {
-      return res.status(404).json({ message: 'Product not found or not yours' });
+      return res
+        .status(404)
+        .json({ message: "Product not found or not yours" });
     }
 
     res.json({
       success: true,
-      message: 'Product updated and pending approval',
-      product: updated
+      message: "Product updated and pending approval",
+      product: updated,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -164,5 +187,5 @@ module.exports = {
   getProduct,
   getMyProducts,
   removeProduct,
-  updateProductController
+  updateProductController,
 };

@@ -1,23 +1,30 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { authMiddleware, authorize } = require('../middleware/authMiddleware');
+const { authMiddleware, authorize } = require("../middleware/authMiddleware");
 const {
   addProduct,
   listProducts,
   getProduct,
   getMyProducts,
   removeProduct,
-  updateProductController
-} = require('../controllers/productController');
+  updateProductController,
+} = require("../controllers/productController");
 
-// Public routes (anyone can view products, but with role-based filtering in controller)
-router.get('/', listProducts);
-router.get('/:id', getProduct);
+// Public routes (anyone can view products)
+router.get("/", listProducts);
 
-// Farmer only routes
-router.post('/', authMiddleware, authorize('farmer'), addProduct);
-router.get('/my-products', authMiddleware, authorize('farmer'), getMyProducts);
-router.put('/:id', authMiddleware, authorize('farmer'), updateProductController);
-router.delete('/:id', authMiddleware, authorize('farmer'), removeProduct);
+// Farmer only routes - SPECIFIC routes MUST come BEFORE parameter routes
+router.get("/my-products", authMiddleware, authorize("farmer"), getMyProducts);
+router.post("/", authMiddleware, authorize("farmer"), addProduct);
+router.put(
+  "/:id",
+  authMiddleware,
+  authorize("farmer"),
+  updateProductController,
+);
+router.delete("/:id", authMiddleware, authorize("farmer"), removeProduct);
+
+// Parameter route - MUST be LAST
+router.get("/:id", getProduct);
 
 module.exports = router;

@@ -1,49 +1,86 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
+const express = require("express");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const helmet = require("helmet");
+const compression = require("compression");
+const rateLimit = require("express-rate-limit");
+const pool = require("./config/db");
+const { morganMiddleware } = require("./config/logger");
+
+// Import routes
+const userRoutes = require("./routes/userRoutes");
+const productRoutes = require("./routes/productRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// Security middleware
+app.use(helmet());
+app.use(compression());
+
+// CORS configuration
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+app.use(cors(corsOptions));
+
+// Request parsing
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Logging
+app.use(morganMiddleware);
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: "Too many requests, please try again later." },
+});
+app.use(limiter);
+
+// Stricter limits for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: true,
+});
+app.use("/api/users/login", authLimiter);
+app.use("/api/users/register", authLimiter);
 
 // Routes
-const userRoutes = require('./routes/userRoutes');
-const productRoutes = require('./routes/productRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const { authMiddleware } = require('./middleware/authMiddleware');
+app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/admin", adminRoutes);
 
-app.use('/api/users', userRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Protected Route
-app.get('/api/protected', authMiddleware, (req, res) => {
+// Health check endpoint
+app.get("/health", (req, res) => {
   res.json({
-    message: 'Protected route accessed',
-    user: req.user
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
   });
 });
 
-// Test route
-app.get('/', (req, res) => {
-  res.send('Zamorex API is running');
-});
+// Error handler (must be last)
+const errorHandler = require("./middleware/errorHandler");
+app.use(errorHandler);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.message);
-  res.status(500).json({ message: 'Server error' });
-});
-
-// Server
-const PORT = process.env.PORT || 5000;
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM signal received: closing HTTP server");
+  process.exit(0);
 });
