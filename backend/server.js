@@ -12,7 +12,7 @@ const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
-// Load environment variables
+// Load environment variablesgit
 dotenv.config();
 
 const app = express();
