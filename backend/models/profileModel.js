@@ -1,34 +1,38 @@
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 // Create or update farmer profile
 const upsertProfile = async (farmerId, profileData) => {
   const { farm_name, location, whatsapp, bio, profile_picture } = profileData;
-  
+
   const query = `
     INSERT INTO farmer_profiles (farmer_id, farm_name, location, whatsapp, bio, profile_picture, is_complete, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW())
     ON CONFLICT (farmer_id) 
     DO UPDATE SET 
-      farm_name = COALESCE($2, farm_name),
-      location = COALESCE($3, location),
-      whatsapp = COALESCE($4, whatsapp),
-      bio = COALESCE($5, bio),
-      profile_picture = COALESCE($6, profile_picture),
+      farm_name = COALESCE(EXCLUDED.farm_name, farmer_profiles.farm_name),
+      location = COALESCE(EXCLUDED.location, farmer_profiles.location),
+      whatsapp = COALESCE(EXCLUDED.whatsapp, farmer_profiles.whatsapp),
+      bio = COALESCE(EXCLUDED.bio, farmer_profiles.bio),
+      profile_picture = COALESCE(EXCLUDED.profile_picture, farmer_profiles.profile_picture),
       is_complete = TRUE,
       updated_at = NOW()
     RETURNING *
   `;
-  
+
   const result = await pool.query(query, [
-    farmerId, farm_name, location, whatsapp, bio, profile_picture
+    farmerId,
+    farm_name,
+    location,
+    whatsapp,
+    bio,
+    profile_picture,
   ]);
-  
+
   // Update users table profile_completed flag
-  await pool.query(
-    'UPDATE users SET profile_completed = TRUE WHERE id = $1',
-    [farmerId]
-  );
-  
+  await pool.query("UPDATE users SET profile_completed = TRUE WHERE id = $1", [
+    farmerId,
+  ]);
+
   return result.rows[0];
 };
 
@@ -76,5 +80,5 @@ module.exports = {
   upsertProfile,
   getProfileByFarmerId,
   getFarmerWithProfile,
-  isProfileComplete
+  isProfileComplete,
 };

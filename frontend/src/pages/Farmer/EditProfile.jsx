@@ -111,10 +111,10 @@ function EditProfile() {
               />
 
               <div className="form-group">
-                <label className="input-label">Bio / About Your Farm</label>
+                <label className="input-label">Bio </label>
                 <textarea
                   name="bio"
-                  placeholder="Tell buyers about your farm, your farming practices, and what makes your produce special..."
+                  placeholder="Tell buyers about you, your farm, your farming practices, and what makes your produce special..."
                   value={profile.bio}
                   onChange={handleChange}
                   className="form-textarea"
@@ -136,17 +136,11 @@ function EditProfile() {
                   onChange={handleChange}
                   className="form-input"
                 />
-                <p className="hint-text">💡 This will be displayed to buyers for easy contact</p>
+                <p className="hint-text"> This will be displayed to buyers for easy contact</p>
               </div>
 
-              <Input
-                label="Profile Picture URL"
-                name="profile_picture"
-                placeholder="Paste image URL from Cloudinary or Imgur"
-                value={profile.profile_picture}
-                onChange={handleChange}
-              />
-              <p className="hint-text">💡 Upload an image to Cloudinary/Imgur and paste the URL here</p>
+              {/* Image upload coming in future update */}
+              
             </div>
 
             <div className="form-actions">

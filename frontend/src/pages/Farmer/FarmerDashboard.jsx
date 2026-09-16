@@ -308,12 +308,7 @@ const checkProfileComplete = async () => {
                   required
                 />
 
-                <Input
-                 label="Product Image URL"
-                 placeholder="Paste image URL (Cloudinary, Imgur, etc.)"
-                 value={newProduct.image_url}
-                 onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
-                 />
+                {/* Product image upload coming in future update */}
 
                 <div className="form-group">
                   <label className="input-label">Category</label>
