@@ -1,0 +1,849 @@
+1. PROJECT OVERVIEW
+What is Zamorex?
+Zamorex is a farmer-to-buyer marketplace platform that connects local farmers directly with buyers. It eliminates middlemen, allowing farmers to get better prices for their produce and buyers to access fresh, locally-grown products at fair prices.
+
+Problem Statement
+In many communities, farmers struggle to find buyers for their produce, while buyers struggle to find fresh, affordable local products. Middlemen often take a large cut, reducing farmers' profits and increasing prices for buyers.
+
+Solution
+Zamorex provides a digital platform where:
+
+Farmers can list their products with pricing and quantity
+
+Admin approves products to ensure quality and legitimacy
+
+Buyers can browse approved products and contact farmers directly
+
+Key Features
+Feature	Description
+User Authentication	Secure registration and login with JWT tokens
+Role-Based Access	Separate dashboards for Admin, Farmer, and Buyer
+Product Management	Farmers can add, view, and delete their products
+Admin Approval Workflow	Products are pending until admin approves or rejects
+Buyer Marketplace	Buyers view only approved products
+Direct Contact	Buyers can contact farmers via phone
+Target Users
+Admin - Platform manager who approves products and manages users
+
+Farmers - Product sellers who list their farm produce
+
+Buyers - Customers looking to purchase fresh farm products
+
+📄 2. TECHNICAL ARCHITECTURE
+System Architecture Diagram
+text
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
+│  │   Browser   │  │  Postman    │  │   Mobile (Future)       │ │
+│  │   (React)   │  │  (Testing)  │  │                         │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘ │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │ HTTP/HTTPS
+┌───────────────────────────▼─────────────────────────────────────┐
+│                      API GATEWAY (Express)                       │
+│                                                                  │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
+│  │  Routes     │  │ Middleware  │  │  Error Handler           │ │
+│  │  - Auth     │  │ - JWT       │  │  - Global Error          │ │
+│  │  - Products │  │ - Rate Limit│  │  - Validation Errors     │ │
+│  │  - Admin    │  │ - CORS      │  │  - 404 Handling          │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘ │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────┐
+│                    CONTROLLER LAYER                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
+│  │   Auth      │  │   Product   │  │   Admin                 │ │
+│  │  Controller │  │  Controller │  │  Controller             │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘ │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────┐
+│                      MODEL LAYER                                │
+│  ┌─────────────┐  ┌─────────────────────────────────────────────┐│
+│  │    User     │  │   Product                                  ││
+│  │    Model    │  │   Model                                    ││
+│  └─────────────┘  └─────────────────────────────────────────────┘│
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────────────┐
+│                   DATABASE LAYER (PostgreSQL)                    │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │                         Database                             │ │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────────────────────────┐ │ │
+│  │  │  Users  │  │Products │  │  Indexes:                    │ │
+│  │  │  Table  │  │  Table  │  │  - phone, status, farmer_id │ │ │
+│  │  └─────────┘  └─────────┘  └─────────────────────────────┘ │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+
+
+Technology Stack
+Backend
+Technology	Purpose
+Node.js	    JavaScript runtime environment
+Express.js	Web framework for REST API
+PostgreSQL	Relational database
+JWT (jsonwebtoken)	Authentication tokens
+bcrypt	Password hashing
+dotenv	Environment variable management
+cors	Cross-origin resource sharing
+helmet	Security headers
+express-rate-limit	Rate limiting protection
+compression	Response compression
+morgan	HTTP request logging
+winston	Application logging
+joi	Input validation
+
+
+
+Frontend
+Technology	Purpose
+React	UI framework
+Vite	Build tool and dev server
+React Router	Client-side routing
+Axios	HTTP client for API calls
+CSS3	Styling and animations
+📄 3. API DOCUMENTATION
+Base URL
+text
+Development: http://localhost:5000/api
+Production: https://zamorex-api.onrender.com/api
+Authentication
+All protected routes require a JWT token in the Authorization header:
+
+text
+Authorization: Bearer <your_jwt_token>
+Response Format
+All responses follow this structure:
+
+json
+{
+  "success": true/false,
+  "message": "Human readable message",
+  "data": { ... }  // Optional
+}
+3.1 Authentication Routes
+Register User
+text
+POST /api/users/register
+Request Body:
+
+json
+{
+  "name": "John Farmer",
+  "phone": "1234567890",
+  "role": "farmer",
+  "password": "securepassword"
+}
+Role Options: farmer, buyer
+
+Response (201 Created):
+
+json
+{
+  "message": "User registered successfully",
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": 1,
+    "name": "John Farmer",
+    "phone": "1234567890",
+    "role": "farmer",
+    "created_at": "2026-01-01T00:00:00.000Z"
+  }
+}
+Login User
+text
+POST /api/users/login
+Request Body:
+
+json
+{
+  "phone": "1234567890",
+  "password": "securepassword"
+}
+Response (200 OK):
+
+json
+{
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": 1,
+    "name": "John Farmer",
+    "phone": "1234567890",
+    "role": "farmer",
+    "created_at": "2026-01-01T00:00:00.000Z"
+  }
+}
+3.2 Product Routes
+Get All Products (Public)
+text
+GET /api/products
+Query Parameters:
+
+Param	Type	Description
+page	number	Page number (default: 1)
+limit	number	Items per page (default: 20)
+type	string	Filter by product type
+min_price	number	Minimum price filter
+max_price	number	Maximum price filter
+Response (200 OK):
+
+json
+{
+  "success": true,
+  "total": 50,
+  "page": 1,
+  "limit": 20,
+  "totalPages": 3,
+  "count": 20,
+  "products": [
+    {
+      "id": 1,
+      "name": "Fresh Tomatoes",
+      "type": "vegetables",
+      "price": "50.00",
+      "quantity": 100,
+      "farmer_id": 3,
+      "status": "approved",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z",
+      "farmer_name": "John Farmer"
+    }
+  ]
+}
+Get Single Product
+text
+GET /api/products/:id
+Response (200 OK):
+
+json
+{
+  "id": 1,
+  "name": "Fresh Tomatoes",
+  "type": "vegetables",
+  "price": "50.00",
+  "quantity": 100,
+  "farmer_id": 3,
+  "status": "approved",
+  "created_at": "2026-01-01T00:00:00.000Z",
+  "updated_at": "2026-01-01T00:00:00.000Z",
+  "farmer_name": "John Farmer"
+}
+Add Product (Farmer Only)
+text
+POST /api/products
+Headers: Authorization: Bearer <token>
+
+Request Body:
+
+json
+{
+  "name": "Fresh Tomatoes",
+  "type": "vegetables",
+  "price": 50,
+  "quantity": 100
+}
+Response (200 OK):
+
+json
+{
+  "message": "Product added successfully",
+  "product": {
+    "id": 1,
+    "name": "Fresh Tomatoes",
+    "type": "vegetables",
+    "price": "50.00",
+    "quantity": 100,
+    "farmer_id": 3,
+    "status": "pending",
+    "created_at": "2026-01-01T00:00:00.000Z",
+    "updated_at": "2026-01-01T00:00:00.000Z"
+  }
+}
+Get Farmer's Products
+text
+GET /api/products/my-products
+Headers: Authorization: Bearer <token>
+
+Response (200 OK):
+
+json
+{
+  "success": true,
+  "count": 5,
+  "products": [
+    {
+      "id": 1,
+      "name": "Fresh Tomatoes",
+      "type": "vegetables",
+      "price": "50.00",
+      "quantity": 100,
+      "farmer_id": 3,
+      "status": "approved",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}
+Update Product (Farmer Only)
+text
+PUT /api/products/:id
+Headers: Authorization: Bearer <token>
+
+Request Body:
+
+json
+{
+  "name": "Fresh Organic Tomatoes",
+  "price": 60,
+  "quantity": 80
+}
+Response (200 OK):
+
+json
+{
+  "success": true,
+  "message": "Product updated and pending approval",
+  "product": {
+    "id": 1,
+    "name": "Fresh Organic Tomatoes",
+    "price": "60.00",
+    "quantity": 80,
+    "status": "pending",
+    "updated_at": "2026-01-01T00:00:00.000Z"
+  }
+}
+Delete Product (Farmer Only)
+text
+DELETE /api/products/:id
+Headers: Authorization: Bearer <token>
+
+Response (200 OK):
+
+json
+{
+  "message": "Product deleted successfully"
+}
+3.3 Admin Routes
+Get Pending Products
+text
+GET /api/admin/products/pending
+Headers: Authorization: Bearer <admin_token>
+
+Response (200 OK):
+
+json
+{
+  "success": true,
+  "count": 3,
+  "products": [
+    {
+      "id": 5,
+      "name": "Fresh Maize",
+      "type": "grains",
+      "price": "80.00",
+      "quantity": 200,
+      "farmer_id": 3,
+      "status": "pending",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}
+Approve Product
+text
+PUT /api/admin/products/:id/approve
+Headers: Authorization: Bearer <admin_token>
+
+Response (200 OK):
+
+json
+{
+  "success": true,
+  "message": "Product approved successfully",
+  "product": {
+    "id": 5,
+    "status": "approved",
+    "updated_at": "2026-01-01T00:00:00.000Z"
+  }
+}
+Reject Product
+text
+PUT /api/admin/products/:id/reject
+Headers: Authorization: Bearer <admin_token>
+
+Response (200 OK):
+
+json
+{
+  "success": true,
+  "message": "Product rejected successfully",
+  "product": {
+    "id": 5,
+    "status": "rejected",
+    "updated_at": "2026-01-01T00:00:00.000Z"
+  }
+}
+Get All Users
+text
+GET /api/admin/users
+Headers: Authorization: Bearer <admin_token>
+
+Response (200 OK):
+
+json
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Admin User",
+      "phone": "0987654321",
+      "role": "admin",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "John Farmer",
+      "phone": "1234567890",
+      "role": "farmer",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}
+Delete User
+text
+DELETE /api/admin/users/:id
+Headers: Authorization: Bearer <admin_token>
+
+Response (200 OK):
+
+json
+{
+  "message": "User deleted successfully"
+}
+3.4 Health Check
+text
+GET /health
+Response (200 OK):
+
+json
+{
+  "status": "ok",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "uptime": 123.45
+}
+📄 4. DATABASE SCHEMA
+Entity Relationship Diagram (ERD)
+text
+┌─────────────────────────────────────────────────────────────────┐
+│                      DATABASE SCHEMA                             │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                         users                                    │
+├─────────────┬───────────────────────────────────────────────────┤
+│ id          │ SERIAL PRIMARY KEY                                │
+│ name        │ VARCHAR(100) NOT NULL                             │
+│ phone       │ VARCHAR(20) UNIQUE NOT NULL                       │
+│ role        │ VARCHAR(20) CHECK (role IN 'farmer','buyer','admin')│
+│ password    │ TEXT NOT NULL                                     │
+│ created_at  │ TIMESTAMP DEFAULT CURRENT_TIMESTAMP               │
+└─────────────┴───────────────────────────────────────────────────┘
+                              │
+                              │ 1 ──┐
+                              │     │
+                              │     │ farmer_id (FK)
+                              │     │
+                              │     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       products                                   │
+├─────────────┬───────────────────────────────────────────────────┤
+│ id          │ SERIAL PRIMARY KEY                                │
+│ name        │ VARCHAR(100) NOT NULL                             │
+│ type        │ VARCHAR(50) DEFAULT 'other'                       │
+│ price       │ DECIMAL(10,2) NOT NULL CHECK (price > 0)          │
+│ quantity    │ INTEGER NOT NULL CHECK (quantity >= 0)            │
+│ farmer_id   │ INTEGER REFERENCES users(id) ON DELETE CASCADE    │
+│ status      │ VARCHAR(20) CHECK 'pending','approved','rejected' │
+│ created_at  │ TIMESTAMP DEFAULT CURRENT_TIMESTAMP               │
+│ updated_at  │ TIMESTAMP DEFAULT CURRENT_TIMESTAMP               │
+└─────────────┴───────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                       INDEXES                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ idx_users_phone           ON users(phone)                       │
+│ idx_products_farmer       ON products(farmer_id)                │
+│ idx_products_status       ON products(status)                   │
+│ idx_products_farmer_status ON products(farmer_id, status)       │
+│ idx_products_type         ON products(type)                     │
+└─────────────────────────────────────────────────────────────────┘
+Database Setup SQL
+sql
+-- Create USERS table
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) UNIQUE NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('farmer', 'buyer', 'admin')),
+    password TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create PRODUCTS table
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    type VARCHAR(50) DEFAULT 'other',
+    price DECIMAL(10,2) NOT NULL CHECK (price > 0),
+    quantity INTEGER NOT NULL CHECK (quantity >= 0),
+    farmer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes
+CREATE INDEX idx_users_phone ON users(phone);
+CREATE INDEX idx_products_farmer ON products(farmer_id);
+CREATE INDEX idx_products_status ON products(status);
+CREATE INDEX idx_products_farmer_status ON products(farmer_id, status);
+CREATE INDEX idx_products_type ON products(type);
+Sample Data
+sql
+-- Create admin user (password: admin123)
+INSERT INTO users (name, phone, role, password) 
+VALUES ('Admin User', '0987654321', 'admin', '$2b$10$N9qo8uLOickgx2ZMRZoMy.MrJvE2Jk5RQV5xvkq6ZVnZ5z5Qz5z5a');
+
+-- Create test farmer (password: farmer123)
+INSERT INTO users (name, phone, role, password) 
+VALUES ('Test Farmer', '1234567890', 'farmer', '$2b$10$N9qo8uLOickgx2ZMRZoMy.MrJvE2Jk5RQV5xvkq6ZVnZ5z5Qz5z5a');
+
+-- Create test buyer (password: buyer123)
+INSERT INTO users (name, phone, role, password) 
+VALUES ('Test Buyer', '5555555555', 'buyer', '$2b$10$N9qo8uLOickgx2ZMRZoMy.MrJvE2Jk5RQV5xvkq6ZVnZ5z5Qz5z5a');
+
+-- Add sample products
+INSERT INTO products (name, type, price, quantity, farmer_id, status) 
+VALUES 
+  ('Fresh Tomatoes', 'vegetables', 50.00, 100, 2, 'approved'),
+  ('Organic Maize', 'grains', 80.00, 200, 2, 'pending'),
+  ('Sweet Potatoes', 'vegetables', 30.00, 150, 2, 'approved');
+📄 5. USER GUIDE
+5.1 How to Register
+Open the application in your browser
+
+Click the Register link on the login page
+
+Fill in the registration form:
+
+Full Name - Your full name
+
+Phone Number - Your phone number (used for login)
+
+Role - Select either "Farmer" or "Buyer"
+
+Password - Create a password (minimum 6 characters)
+
+Click Create Account
+
+You will be redirected to the login page
+
+Login with your phone number and password
+
+5.2 How to Login
+Open the application in your browser
+
+Enter your Phone Number and Password
+
+Click Login
+
+You will be redirected to your role-specific dashboard
+
+5.3 Farmer Guide
+Viewing Products
+After logging in, you'll see your Farmer Dashboard
+
+All your products are displayed in a table with:
+
+Product name
+
+Category
+
+Price
+
+Quantity
+
+Status (Pending / Approved / Rejected)
+
+Adding a Product
+Click the + Add Product button on your dashboard
+
+Fill in the product details:
+
+Product Name - e.g., Fresh Tomatoes
+
+Category - Select from the dropdown
+
+Price - Price per unit
+
+Quantity - Available quantity
+
+Click Add Product
+
+Your product will appear with "Pending" status
+
+Wait for admin approval
+
+Deleting a Product
+Find the product in your table
+
+Click the Delete button next to the product
+
+Confirm deletion when prompted
+
+The product will be removed
+
+Understanding Status
+🟡 Pending - Awaiting admin approval
+
+🟢 Approved - Visible to buyers
+
+🔴 Rejected - Not visible, needs modification
+
+5.4 Admin Guide
+Approving Products
+Log in as Admin
+
+You'll see the Admin Dashboard
+
+Click the Pending Approvals tab
+
+Review each pending product:
+
+Check product name, price, quantity
+
+Verify the farmer ID
+
+Click Approve to approve the product
+
+Click Reject to reject the product
+
+Managing Users
+Click the Manage Users tab
+
+View all registered users in the table
+
+Search for users by name or phone
+
+Delete users by clicking the Delete button (admins cannot be deleted)
+
+5.5 Buyer Guide
+Browsing Products
+Log in as Buyer
+
+You'll see all approved products
+
+Products are displayed in a grid with:
+
+Product name and category
+
+Price
+
+Stock quantity
+
+Farmer name
+
+Contacting a Farmer
+Find a product you're interested in
+
+Click the 📞 Contact Farmer button
+
+This will initiate a phone call to the farmer (on mobile devices)
+
+Discuss pricing, delivery, and purchase directly with the farmer
+
+📄 6. SETUP GUIDE
+Prerequisites
+Software	Version	Download
+Node.js	v18+	nodejs.org
+PostgreSQL	v14+	postgresql.org
+Git	Latest	git-scm.com
+Step 1: Clone the Repository
+bash
+git clone https://github.com/Walusungu24/Zamorex-Repo.git
+cd Zamorex-Repo
+Step 2: Setup the Backend
+bash
+cd backend
+npm install
+Create .env file:
+env
+PORT=5000
+NODE_ENV=development
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=zamorex_db
+DB_PORT=5432
+JWT_SECRET=your_jwt_secret_key
+FRONTEND_URL=http://localhost:5173
+Setup Database
+Open pgAdmin or psql
+
+Run the database schema SQL (provided in Section 4)
+
+Create admin user: npm run create-admin
+
+Start Backend
+bash
+npm run dev
+Backend runs at: http://localhost:5000
+
+Step 3: Setup the Frontend
+bash
+cd ../frontend
+npm install
+Create .env file:
+env
+VITE_API_URL=http://localhost:5000/api
+Start Frontend
+bash
+npm run dev
+Frontend runs at: http://localhost:5173
+
+Step 4: Test the Application
+Open http://localhost:5173
+
+Login with admin credentials:
+
+Phone: 0987654321
+
+Password: admin123
+
+You should see the Admin Dashboard
+
+📄 7. DEPLOYMENT GUIDE
+Deploying Backend to Render.com
+Step 1: Create a Render Account
+Go to render.com
+
+Sign up with GitHub or email
+
+Step 2: Deploy PostgreSQL Database
+Click New → PostgreSQL
+
+Fill in:
+
+Name: zamorex-db
+
+Database: zamorex_db
+
+User: zamorex_user
+
+Click Create Database
+
+Copy the Internal Database URL (will be used for environment)
+
+Step 3: Deploy Backend
+Click New → Web Service
+
+Connect your GitHub repository
+
+Fill in:
+
+Name: zamorex-api
+
+Environment: Node
+
+Build Command: npm install
+
+Start Command: npm start
+
+Add Environment Variables:
+
+text
+PORT=5000
+NODE_ENV=production
+JWT_SECRET=your_secure_secret_key
+FRONTEND_URL=your_frontend_url
+Click Create Web Service
+
+Step 4: Run Database Schema on Production
+Go to your PostgreSQL dashboard on Render
+
+Open the Shell or psql console
+
+Run the schema SQL from Section 4
+
+Create admin user
+
+Deploying Frontend to Vercel
+Step 1: Create a Vercel Account
+Go to vercel.com
+
+Sign up with GitHub
+
+Step 2: Deploy
+Click Add New → Project
+
+Import your GitHub repository
+
+Select the frontend folder as root
+
+Configure:
+
+Framework Preset: Vite
+
+Build Command: npm run build
+
+Output Directory: dist
+
+Add Environment Variable:
+
+text
+VITE_API_URL=https://your-backend-url.onrender.com/api
+Click Deploy
+
+Post-Deployment Checklist
+□ Backend health check: https://your-backend-url.onrender.com/health
+□ Frontend loads correctly
+□ Login works with admin credentials
+□ Admin can view pending products
+□ Farmer can add products
+□ Buyer can view approved products
+✅ Final Notes
+Security Considerations
+All passwords are hashed with bcrypt
+
+JWT tokens expire after 7 days
+
+Rate limiting prevents brute force attacks
+
+Helmet.js adds security headers
+
+CORS is configured for the frontend URL only
+
+Scalability
+Database indexes on frequently queried columns
+
+Pagination on all list endpoints
+
+Stateless JWT authentication
+
+Connection pooling in PostgreSQL
+
+Future Enhancements
+Email notifications
+
+Product images
+
+Payment integration
+
+Real-time messaging
+
+Mobile application
+

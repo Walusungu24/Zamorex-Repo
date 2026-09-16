@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../../components/layouts/Navbar';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -13,23 +14,32 @@ function BuyerDashboard() {
   const [total, setTotal] = useState(0);
   const [notifiedProduct, setNotifiedProduct] = useState(null);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearch(searchTerm);
+  }, 500);
+  return () => clearTimeout(timer);
+}, [searchTerm]);
 
   useEffect(() => {
     fetchProducts();
   }, [page]);
 
   const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const res = await API.get(`/products?page=${page}&limit=12`);
-      setProducts(res.data.products || []);
-      setTotalPages(res.data.totalPages || 1);
-      setTotal(res.data.total || 0);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    }
-    setLoading(false);
-  };
+  setLoading(true);
+  try {
+    const res = await API.get(`/products?page=${page}&limit=12&search=${debouncedSearch}`);
+    setProducts(res.data.products || []);
+    setTotalPages(res.data.totalPages || 1);
+    setTotal(res.data.total || 0);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  }
+  setLoading(false);
+};
 
   const handleContactFarmer = (phone, productName) => {
     setNotifiedProduct(productName);
@@ -57,15 +67,26 @@ function BuyerDashboard() {
     <>
       <Navbar user={user} />
       <div className="buyer-container container">
-        <div className="page-header">
-          <div>
-            <h1>🛒 Fresh <span>Farm Products</span></h1>
-            <p className="subtitle">
-              Browse locally grown produce from farmers near you
-              {total > 0 && ` • ${total} products available`}
-            </p>
-          </div>
-        </div>
+         <div className="page-header">
+      <div>
+        <h1>
+          Fresh <span className="farm-products">Farm Products</span>
+        </h1>
+        <p className="subtitle">
+          Browse locally grown produce from farmers near you ({products.length} of {total} products available)
+        </p>
+      </div>
+
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Search products by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+      </div>
+    </div>
 
         {products.length === 0 ? (
           <div className="empty-state">
@@ -79,27 +100,32 @@ function BuyerDashboard() {
               {products.map(product => (
                 <Card key={product.id} className="product-card">
                   <div className="product-content">
-                    <div className="product-header">
-                      <h3>{product.name}</h3>
-                      <span className="product-type">{product.type}</span>
-                    </div>
-                    <div className="product-price">K{product.price}</div>
-                    <div className="product-meta">
-                      <span className="product-stock">📦 Stock: {product.quantity}</span>
-                      <span className="product-farmer">👨‍🌾 {product.farmer_name || 'Farmer'}</span>
-                    </div>
-                    <Button 
-                      fullWidth 
-                      onClick={() => handleContactFarmer(product.farmer_phone, product.name)}
-                    >
-                      📞 Contact Farmer
-                    </Button>
-                    {notifiedProduct === product.name && (
-                      <div className="contact-notification">
-                        Calling farmer...
-                      </div>
-                    )}
+                    {product.image_url && (
+                      <img src={product.image_url} alt={product.name} className="product-image" />
+                   )}
+                     <div className="product-header">
+                       <h3>{product.name}</h3>
+                     <span className="product-type">{product.type || 'Other'}</span>
                   </div>
+                  <div className="product-price">K{product.price}</div>
+                  <div className="product-meta">
+                   <span className="product-stock">📦 Stock: {product.quantity}</span>
+                   <span className="product-farmer">
+                      👨‍🌾 <Link to={`/farmer/${product.farmer_id}`} className="farmer-link">
+                        {product.farmer_name || 'Farmer'}
+                     </Link>
+                 </span>
+               </div>
+               <Button fullWidth onClick={() => handleContactFarmer(product.farmer_phone, product.name)}>
+                📞 Contact Farmer
+               </Button>
+                </div>
+                   
+                     {notifiedProduct === product.name && (
+                       <div className="contact-notification">
+                            Calling farmer...
+                       </div>
+                     )}
                 </Card>
               ))}
             </div>

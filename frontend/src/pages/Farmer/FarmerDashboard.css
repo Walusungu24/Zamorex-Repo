@@ -164,3 +164,114 @@
     flex-direction: column;
   }
 }
+
+.profile-prompt {
+  background: linear-gradient(135deg, var(--primary-bg), #c8e6c9);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--primary);
+}
+
+.profile-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.prompt-icon {
+  font-size: 32px;
+}
+
+.profile-prompt-content h3 {
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+
+.profile-prompt-content p {
+  color: var(--gray-600);
+  font-size: 14px;
+  margin: 0;
+}
+
+.prompt-dismiss {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--gray-400);
+  cursor: pointer;
+  margin-left: auto;
+  padding: 4px 8px;
+}
+
+.prompt-dismiss:hover {
+  color: var(--gray-600);
+}
+
+@media (max-width: 768px) {
+  .profile-prompt-content {
+    flex-wrap: wrap;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .prompt-dismiss {
+    margin-left: 0;
+  }
+}
+/* Add to the end of FarmerDashboard.css */
+
+.profile-prompt {
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--primary);
+}
+
+.profile-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.prompt-icon {
+  font-size: 32px;
+}
+
+.profile-prompt-content h3 {
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+
+.profile-prompt-content p {
+  color: var(--gray-600);
+  font-size: 14px;
+  margin: 0;
+}
+
+.prompt-dismiss {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--gray-400);
+  cursor: pointer;
+  margin-left: auto;
+  padding: 4px 8px;
+}
+
+.prompt-dismiss:hover {
+  color: var(--gray-600);
+}
+
+@media (max-width: 768px) {
+  .profile-prompt-content {
+    flex-wrap: wrap;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .prompt-dismiss {
+    margin-left: 0;
+  }
+}

@@ -46,3 +46,25 @@ CREATE TABLE IF NOT EXISTS products (
 -- Password hash is bcrypt of 'admin123'
 INSERT INTO users (name, phone, role, password) 
 VALUES ('Admin', '0000000000', 'admin', '$2b$10$YourHashedPasswordHere');
+
+
+-- Create farmer_profiles table
+CREATE TABLE farmer_profiles (
+    id SERIAL PRIMARY KEY,
+    farmer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    farm_name VARCHAR(100),
+    profile_picture VARCHAR(255), -- Cloudinary URL
+    location VARCHAR(255),
+    whatsapp VARCHAR(20),
+    bio TEXT,
+    is_complete BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(farmer_id)
+);
+
+-- Add indexes
+CREATE INDEX idx_farmer_profiles_farmer_id ON farmer_profiles(farmer_id);
+
+-- Add profile_completed flag to users table for quick check
+ALTER TABLE users ADD COLUMN profile_completed BOOLEAN DEFAULT FALSE;

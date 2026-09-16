@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; 
 import Navbar from '../../components/layouts/Navbar';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -7,6 +8,7 @@ import API from '../../services/api';
 import './FarmerDashboard.css';
 
 function FarmerDashboard() {
+  const navigate = useNavigate();  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -18,7 +20,29 @@ function FarmerDashboard() {
     price: '',
     quantity: ''
   });
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+
+
+// Check if profile is complete
+useEffect(() => {
+  checkProfileComplete();
+}, []);
+
+
+const checkProfileComplete = async () => {
+  try {
+    const res = await API.get('/profiles/check');
+    if (!res.data.isComplete) {
+      // Show profile completion prompt
+      setShowProfilePrompt(true);
+    }
+  } catch (error) {
+    console.error('Error checking profile:', error);
+  }
+};
 
   useEffect(() => {
     fetchProducts();
@@ -65,6 +89,25 @@ function FarmerDashboard() {
     setDeleting(null);
   };
 
+  const handleEditProduct = async (e) => {
+  e.preventDefault();
+  setSubmitting(true);
+  try {
+    await API.put(`/products/${editingProduct.id}`, {
+      name: editingProduct.name,
+      type: editingProduct.type,
+      price: parseFloat(editingProduct.price),
+      quantity: parseInt(editingProduct.quantity)
+    });
+    setShowEditModal(false);
+    setEditingProduct(null);
+    await fetchProducts();
+  } catch (error) {
+    console.error('Error updating product:', error);
+  }
+  setSubmitting(false);
+};
+
   const getStatusBadge = (status) => {
     const config = {
       approved: { label: 'Approved', className: 'status-approved' },
@@ -90,6 +133,25 @@ function FarmerDashboard() {
   return (
     <>
       <Navbar user={user} />
+
+    {showProfilePrompt && (
+  <div className="profile-prompt">
+    <div className="profile-prompt-content">
+      <span className="prompt-icon">👨‍🌾</span>
+      <div>
+        <h3>Complete Your Profile</h3>
+        <p>Add your farm details, location, and WhatsApp number so buyers can find and contact you easily.</p>
+      </div>
+      <Button onClick={() => window.location.href = '/farmer/profile'}>
+        Complete Profile
+      </Button>
+      <button className="prompt-dismiss" onClick={() => setShowProfilePrompt(false)}>
+        ✕
+      </button>
+    </div>
+  </div>
+)}
+
       <div className="farmer-container container">
         <div className="page-header">
           <div>
@@ -139,6 +201,16 @@ function FarmerDashboard() {
                       <td>{product.quantity}</td>
                       <td>{getStatusBadge(product.status)}</td>
                       <td>
+                        <div className="action-buttons">
+                         <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          onClick={() => {
+                          setEditingProduct(product);
+                          setShowEditModal(true);
+                          }}
+                           >
+                         </Button>
                         <Button 
                           variant="danger" 
                           size="sm" 
@@ -147,6 +219,7 @@ function FarmerDashboard() {
                         >
                           Delete
                         </Button>
+                         </div>
                       </td>
                     </tr>
                   ))}
@@ -155,6 +228,8 @@ function FarmerDashboard() {
             </div>
           </Card>
         )}
+
+
 
         {showAddModal && (
           <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
@@ -165,6 +240,62 @@ function FarmerDashboard() {
                   className="modal-close"
                   onClick={() => setShowAddModal(false)}
                 >
+
+        {showEditModal && editingProduct && (
+  <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header">
+        <h2>✏️ Edit Product</h2>
+        <button className="modal-close" onClick={() => setShowEditModal(false)}>✕</button>
+      </div>
+      <form onSubmit={handleEditProduct}>
+        <Input
+          label="Product Name"
+          value={editingProduct.name}
+          onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+          required
+        />
+        <div className="form-group">
+          <label className="input-label">Category</label>
+          <select
+            value={editingProduct.type}
+            onChange={(e) => setEditingProduct({...editingProduct, type: e.target.value})}
+            className="form-select"
+            required
+          >
+            <option value="vegetables">Vegetables</option>
+            <option value="fruits">Fruits</option>
+            <option value="grains">Grains</option>
+            <option value="dairy">Dairy</option>
+            <option value="meat">Meat</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div className="form-row">
+          <Input
+            label="Price (K)"
+            type="number"
+            value={editingProduct.price}
+            onChange={(e) => setEditingProduct({...editingProduct, price: e.target.value})}
+            required
+          />
+          <Input
+            label="Quantity"
+            type="number"
+            value={editingProduct.quantity}
+            onChange={(e) => setEditingProduct({...editingProduct, quantity: e.target.value})}
+            required
+          />
+        </div>
+        <div className="modal-actions">
+          <Button type="submit" loading={submitting}>Update Product</Button>
+          <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancel</Button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
                   ✕
                 </button>
               </div>
@@ -176,6 +307,14 @@ function FarmerDashboard() {
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   required
                 />
+
+                <Input
+                 label="Product Image URL"
+                 placeholder="Paste image URL (Cloudinary, Imgur, etc.)"
+                 value={newProduct.image_url}
+                 onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
+                 />
+
                 <div className="form-group">
                   <label className="input-label">Category</label>
                   <select

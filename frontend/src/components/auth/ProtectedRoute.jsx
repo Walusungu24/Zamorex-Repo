@@ -12,19 +12,18 @@ function ProtectedRoute({ allowedRoles, children }) {
 
   // If roles are specified and user's role is not allowed
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Redirect to the appropriate dashboard based on user's role
     const redirectPath = user.role === 'admin' ? '/admin' : 
                         user.role === 'farmer' ? '/farmer' : 
                         user.role === 'buyer' ? '/buyer' : '/login';
     return <Navigate to={redirectPath} replace />;
   }
 
-  // If children are provided (for nested routes), render them
+  // If children are provided, render them
   if (children) {
     return children;
   }
 
-  // Otherwise render the outlet (for nested routes)
+  // Otherwise render the outlet
   return <Outlet />;
 }
 

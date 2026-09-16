@@ -1,19 +1,24 @@
 const pool = require("../config/db");
 
 // Create a new product with pending status
-const createProduct = async (name, type, price, quantity, farmerId) => {
+const createProduct = async (
+  name,
+  type,
+  price,
+  quantity,
+  farmer_id,
+  image_url = null,
+) => {
   const result = await pool.query(
-    `INSERT INTO products (name, type, price, quantity, farmer_id, status) 
-     VALUES ($1, $2, $3, $4, $5, 'pending') 
-     RETURNING *`,
-    [name, type, price, quantity, farmerId],
+    "INSERT INTO products (name, type, price, quantity, farmer_id, status, image_url) VALUES ($1, $2, $3, $4, $5, 'pending', $6) RETURNING *",
+    [name, type, price, quantity, farmer_id, image_url],
   );
   return result.rows[0];
 };
 
 // Get products with optional filters and pagination
 const getProducts = async (filters = {}) => {
-  const { status, farmer_id, limit = 50, offset = 0 } = filters;
+  const { status, farmer_id, limit = 50, offset = 0, search } = filters;
   let query = `
     SELECT p.*, u.name as farmer_name, u.phone as farmer_phone
     FROM products p
@@ -31,6 +36,11 @@ const getProducts = async (filters = {}) => {
   if (farmer_id) {
     query += ` AND p.farmer_id = $${paramCount++}`;
     values.push(farmer_id);
+  }
+
+  if (search) {
+    query += ` AND p.name ILIKE $${paramCount++}`;
+    values.push(`%${search}%`);
   }
 
   query += ` ORDER BY p.created_at DESC LIMIT $${paramCount++} OFFSET $${paramCount++}`;

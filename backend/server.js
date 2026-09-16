@@ -11,6 +11,7 @@ const { morganMiddleware } = require("./config/logger");
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 
 // Load environment variablesgit
 dotenv.config();
@@ -59,6 +60,7 @@ app.use("/api/users/register", authLimiter);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/profiles", profileRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
