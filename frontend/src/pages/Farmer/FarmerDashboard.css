@@ -67,12 +67,74 @@
   color: var(--danger);
 }
 
+/* ============ INLINE QUANTITY EDITOR ============ */
+.th-hint {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--gray-400);
+  text-transform: none;
+  letter-spacing: 0;
+  display: block;
+  margin-top: 2px;
+}
+
+.quantity-editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quantity-input {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--gray-800);
+  transition: var(--transition);
+  background: white;
+}
+
+.quantity-input:hover {
+  border-color: var(--primary);
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.quantity-input:disabled {
+  background: var(--gray-50);
+  color: var(--gray-400);
+  cursor: not-allowed;
+}
+
+.saving-indicator {
+  color: var(--primary);
+  font-size: 12px;
+  animation: spin 1s linear infinite;
+}
+
+.hint-text {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-top: 4px;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* ============ FORM ROWS ============ */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
+/* ============ MODAL ============ */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -150,21 +212,7 @@
   flex: 1;
 }
 
-@media (max-width: 640px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .modal-content {
-    padding: 24px;
-    margin: 12px;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-}
-
+/* ============ PROFILE PROMPT ============ */
 .profile-prompt {
   background: linear-gradient(135deg, var(--primary-bg), #c8e6c9);
   border-radius: var(--radius);
@@ -208,82 +256,14 @@
   color: var(--gray-600);
 }
 
-@media (max-width: 768px) {
-  .profile-prompt-content {
-    flex-wrap: wrap;
-    text-align: center;
-    justify-content: center;
-  }
-
-  .prompt-dismiss {
-    margin-left: 0;
-  }
-}
-/* Add to the end of FarmerDashboard.css */
-
-.profile-prompt {
-  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-  border-radius: var(--radius);
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  border: 1px solid var(--primary);
-}
-
-.profile-prompt-content {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.prompt-icon {
-  font-size: 32px;
-}
-
-.profile-prompt-content h3 {
-  color: var(--gray-800);
-  margin-bottom: 4px;
-}
-
-.profile-prompt-content p {
-  color: var(--gray-600);
-  font-size: 14px;
-  margin: 0;
-}
-
-.prompt-dismiss {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: var(--gray-400);
-  cursor: pointer;
-  margin-left: auto;
-  padding: 4px 8px;
-}
-
-.prompt-dismiss:hover {
-  color: var(--gray-600);
-}
-
-@media (max-width: 768px) {
-  .profile-prompt-content {
-    flex-wrap: wrap;
-    text-align: center;
-    justify-content: center;
-  }
-
-  .prompt-dismiss {
-    margin-left: 0;
-  }
-}
-
-/* Action buttons in table */
+/* ============ ACTION BUTTONS ============ */
 .action-buttons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-/* Edit modal warning */
+/* ============ EDIT MODAL WARNING ============ */
 .edit-warning {
   background: var(--warning-bg);
   color: #b45309;
@@ -294,7 +274,33 @@
   border: 1px solid #fcd34d;
 }
 
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+  .profile-prompt-content {
+    flex-wrap: wrap;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .prompt-dismiss {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    padding: 24px;
+    margin: 12px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
   .action-buttons {
     flex-direction: column;
   }
