@@ -173,3 +173,26 @@
     justify-content: center;
   }
 }
+
+/* Farmer clickable profile link in navbar */
+.navbar-user-link {
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin: -6px -10px;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.navbar-user-link:hover {
+  background: var(--gray-100);
+}
+
+.navbar-user-link:hover .user-name {
+  color: var(--primary);
+}
+
+.navbar-user-link:hover .user-role {
+  color: var(--primary);
+}

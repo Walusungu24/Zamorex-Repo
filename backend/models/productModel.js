@@ -124,6 +124,19 @@ const updateProduct = async (productId, farmerId, updates) => {
   return result.rows[0];
 };
 
+// Farmer only: Update product quantity without triggering re-approval
+const updateProductQuantity = async (productId, farmerId, quantity) => {
+  const query = `
+    UPDATE products 
+    SET quantity = $1,
+        updated_at = NOW()
+    WHERE id = $2 AND farmer_id = $3
+    RETURNING *
+  `;
+  const result = await pool.query(query, [quantity, productId, farmerId]);
+  return result.rows[0];
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -132,4 +145,5 @@ module.exports = {
   deleteProduct,
   updateProductStatus,
   updateProduct,
+  updateProductQuantity,
 };

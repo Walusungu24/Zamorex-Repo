@@ -1,0 +1,29 @@
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--gray-600);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.back-button:hover {
+  background: var(--gray-100);
+  color: var(--primary);
+}
+
+.back-arrow {
+  font-size: 16px;
+  transition: var(--transition);
+}
+
+.back-button:hover .back-arrow {
+  transform: translateX(-3px);
+}

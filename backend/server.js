@@ -26,7 +26,7 @@ app.use(compression());
 // CORS configuration
 const corsOptions = {
   origin: process.env.FRONTEND_URL || "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };

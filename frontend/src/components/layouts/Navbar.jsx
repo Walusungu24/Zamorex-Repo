@@ -20,6 +20,22 @@ function Navbar({ user }) {
     return labels[role] || role;
   };
 
+  // Farmers can click their name to view/edit profile
+  const isFarmer = user?.role === 'farmer';
+  const profilePath = isFarmer ? '/farmer/profile' : null;
+
+  const userInfoContent = (
+    <>
+      <span className="user-avatar">
+        {user?.name?.charAt(0) || 'U'}
+      </span>
+      <div className="user-info">
+        <span className="user-name">{user?.name || 'User'}</span>
+        <span className="user-role">{getRoleDisplay(user?.role)}</span>
+      </div>
+    </>
+  );
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
@@ -37,15 +53,20 @@ function Navbar({ user }) {
         </button>
 
         <div className={`navbar-menu ${isMenuOpen ? 'open' : ''}`}>
-          <div className="navbar-user">
-            <span className="user-avatar">
-              {user?.name?.charAt(0) || 'U'}
-            </span>
-            <div className="user-info">
-              <span className="user-name">{user?.name || 'User'}</span>
-              <span className="user-role">{getRoleDisplay(user?.role)}</span>
+          {isFarmer ? (
+            <Link 
+              to={profilePath} 
+              className="navbar-user navbar-user-link"
+              title="View / Edit your profile"
+            >
+              {userInfoContent}
+            </Link>
+          ) : (
+            <div className="navbar-user">
+              {userInfoContent}
             </div>
-          </div>
+          )}
+          
           <button className="navbar-logout" onClick={handleLogout}>
             <span>🚪</span> Logout
           </button>

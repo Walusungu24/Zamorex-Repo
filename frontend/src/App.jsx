@@ -9,6 +9,7 @@ import EditProfile from './pages/Farmer/EditProfile';
 import FarmerProfile from './pages/Public/FarmerProfile';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import './styles/global.css';
+import EditProfileForm from './pages/Farmer/EditProfileForm';
 
 function App() {
   return (
@@ -33,6 +34,11 @@ function App() {
             <ProtectedRoute allowedRoles={['farmer']}>
               <FarmerDashboard />
             </ProtectedRoute>
+          } />
+          <Route path="/farmer/profile/edit" element={
+          <ProtectedRoute allowedRoles={['farmer']}>
+          <EditProfileForm />
+          </ProtectedRoute>
           } />
           <Route path="/farmer/profile" element={
             <ProtectedRoute allowedRoles={['farmer']}>

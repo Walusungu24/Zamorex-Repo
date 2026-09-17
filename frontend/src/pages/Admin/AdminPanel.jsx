@@ -102,7 +102,7 @@ function AdminPanel() {
       <div className="admin-container container">
         <div className="page-header">
           <div>
-            <h1>👑 Admin <span>Dashboard</span></h1>
+            <h1>Admin <span>Dashboard</span></h1>
             <p className="subtitle">Manage products and users across the platform</p>
           </div>
           <div className="admin-stats">
@@ -209,7 +209,7 @@ function AdminPanel() {
                 <span className="search-icon">🔍</span>
                 <input
                   type="text"
-                  placeholder="Search by name or phone..."
+                  placeholder="     Search by name or phone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"

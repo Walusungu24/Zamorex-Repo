@@ -4,6 +4,7 @@ const {
   getProductById,
   deleteProduct,
   updateProduct,
+  updateProductQuantity,
 } = require("../models/productModel");
 
 // Farmer only: Add new product (status defaults to 'pending')
@@ -181,6 +182,44 @@ const updateProductController = async (req, res) => {
   }
 };
 
+// Farmer only: Quick quantity update (no re-approval needed)
+const updateQuantityController = async (req, res) => {
+  const { id } = req.params;
+  const { quantity } = req.body;
+  const farmerId = req.user.id;
+
+  if (quantity === undefined || quantity === null) {
+    return res.status(400).json({ message: "Quantity is required" });
+  }
+
+  if (isNaN(quantity) || quantity < 0) {
+    return res.status(400).json({ message: "Valid quantity is required" });
+  }
+
+  try {
+    const updated = await updateProductQuantity(
+      id,
+      farmerId,
+      parseInt(quantity),
+    );
+
+    if (!updated) {
+      return res
+        .status(404)
+        .json({ message: "Product not found or not yours" });
+    }
+
+    res.json({
+      success: true,
+      message: "Quantity updated successfully",
+      product: updated,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = {
   addProduct,
   listProducts,
@@ -188,4 +227,5 @@ module.exports = {
   getMyProducts,
   removeProduct,
   updateProductController,
+  updateQuantityController,
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layouts/Navbar';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -8,44 +8,28 @@ import API from '../../services/api';
 import './FarmerDashboard.css';
 
 function FarmerDashboard() {
-  const navigate = useNavigate();  
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [savingQuantity, setSavingQuantity] = useState(null);
+  const [originalQuantities, setOriginalQuantities] = useState({});
+  const [editingProduct, setEditingProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({
     name: '',
     type: 'vegetables',
     price: '',
     quantity: ''
   });
-  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-
-
-// Check if profile is complete
-useEffect(() => {
-  checkProfileComplete();
-}, []);
-
-
-const checkProfileComplete = async () => {
-  try {
-    const res = await API.get('/profiles/check');
-    if (!res.data.isComplete) {
-      // Show profile completion prompt
-      setShowProfilePrompt(true);
-    }
-  } catch (error) {
-    console.error('Error checking profile:', error);
-  }
-};
 
   useEffect(() => {
     fetchProducts();
+    checkProfileComplete();
   }, []);
 
   const fetchProducts = async () => {
@@ -59,6 +43,18 @@ const checkProfileComplete = async () => {
     setLoading(false);
   };
 
+  const checkProfileComplete = async () => {
+    try {
+      const res = await API.get('/profiles/check');
+      if (!res.data.isComplete) {
+        setShowProfilePrompt(true);
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+    }
+  };
+
+  // ============ ADD PRODUCT ============
   const handleAddProduct = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -73,10 +69,104 @@ const checkProfileComplete = async () => {
       await fetchProducts();
     } catch (error) {
       console.error('Error adding product:', error);
+      alert('Failed to add product');
     }
     setSubmitting(false);
   };
 
+  // ============ EDIT PRODUCT (name, type, price - requires re-approval) ============
+  const openEditModal = (product) => {
+    setEditingProduct({
+      id: product.id,
+      name: product.name,
+      type: product.type,
+      price: product.price,
+      status: product.status
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditProduct = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await API.put(`/products/${editingProduct.id}`, {
+        name: editingProduct.name,
+        type: editingProduct.type,
+        price: parseFloat(editingProduct.price)
+      });
+      setShowEditModal(false);
+      setEditingProduct(null);
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product');
+    }
+    setSubmitting(false);
+  };
+
+  // ============ QUICK QUANTITY UPDATE (no re-approval needed) ============
+const handleQuantityChange = (productId, value) => {
+  // Remember the original quantity when the user starts editing
+  setOriginalQuantities(prev => ({
+    ...prev,
+    [productId]: prev[productId] !== undefined 
+      ? prev[productId] 
+      : products.find(p => p.id === productId)?.quantity
+  }));
+
+  setProducts(products.map(p =>
+    p.id === productId ? { ...p, quantity: value } : p
+  ));
+};
+
+const handleQuantityBlur = async (product) => {
+  const newQuantity = parseInt(product.quantity);
+  const originalQuantity = parseInt(originalQuantities[product.id]);
+
+  // Validate
+  if (isNaN(newQuantity) || newQuantity < 0) {
+    alert('Quantity must be a valid number');
+    await fetchProducts();
+    setOriginalQuantities(prev => {
+      const copy = { ...prev };
+      delete copy[product.id];
+      return copy;
+    });
+    return;
+  }
+
+  // Skip only if truly unchanged
+  if (newQuantity === originalQuantity) {
+    setOriginalQuantities(prev => {
+      const copy = { ...prev };
+      delete copy[product.id];
+      return copy;
+    });
+    return;
+  }
+
+  setSavingQuantity(product.id);
+  try {
+    await API.patch(`/products/${product.id}/quantity`, {
+      quantity: newQuantity
+    });
+    await fetchProducts();
+  } catch (error) {
+    console.error('Error updating quantity:', error);
+    alert('Failed to update quantity: ' + (error.response?.data?.message || error.message));
+    await fetchProducts();
+  } finally {
+    setSavingQuantity(null);
+    setOriginalQuantities(prev => {
+      const copy = { ...prev };
+      delete copy[product.id];
+      return copy;
+    });
+  }
+};
+
+  // ============ DELETE PRODUCT ============
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     setDeleting(id);
@@ -88,25 +178,6 @@ const checkProfileComplete = async () => {
     }
     setDeleting(null);
   };
-
-  const handleEditProduct = async (e) => {
-  e.preventDefault();
-  setSubmitting(true);
-  try {
-    await API.put(`/products/${editingProduct.id}`, {
-      name: editingProduct.name,
-      type: editingProduct.type,
-      price: parseFloat(editingProduct.price),
-      quantity: parseInt(editingProduct.quantity)
-    });
-    setShowEditModal(false);
-    setEditingProduct(null);
-    await fetchProducts();
-  } catch (error) {
-    console.error('Error updating product:', error);
-  }
-  setSubmitting(false);
-};
 
   const getStatusBadge = (status) => {
     const config = {
@@ -133,26 +204,25 @@ const checkProfileComplete = async () => {
   return (
     <>
       <Navbar user={user} />
-
-    {showProfilePrompt && (
-  <div className="profile-prompt">
-    <div className="profile-prompt-content">
-      <span className="prompt-icon">👨‍🌾</span>
-      <div>
-        <h3>Complete Your Profile</h3>
-        <p>Add your farm details, location, and WhatsApp number so buyers can find and contact you easily.</p>
-      </div>
-      <Button onClick={() => window.location.href = '/farmer/profile'}>
-        Complete Profile
-      </Button>
-      <button className="prompt-dismiss" onClick={() => setShowProfilePrompt(false)}>
-        ✕
-      </button>
-    </div>
-  </div>
-)}
-
       <div className="farmer-container container">
+        {showProfilePrompt && (
+          <div className="profile-prompt">
+            <div className="profile-prompt-content">
+              <span className="prompt-icon">👨‍🌾</span>
+              <div>
+                <h3>Complete Your Profile</h3>
+                <p>Add your farm details, location, and WhatsApp number so buyers can find and contact you easily.</p>
+              </div>
+              <Button onClick={() => navigate('/farmer/profile')}>
+                Complete Profile
+              </Button>
+              <button className="prompt-dismiss" onClick={() => setShowProfilePrompt(false)}>
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="page-header">
           <div>
             <h1>🌾 My <span>Products</span></h1>
@@ -181,7 +251,7 @@ const checkProfileComplete = async () => {
                     <th>Name</th>
                     <th>Type</th>
                     <th>Price</th>
-                    <th>Quantity</th>
+                    <th>Quantity <span className="th-hint">(editable)</span></th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -189,37 +259,47 @@ const checkProfileComplete = async () => {
                 <tbody>
                   {products.map(product => (
                     <tr key={product.id}>
+                      <td><span className="product-name">{product.name}</span></td>
+                      <td><span className="product-type">{product.type}</span></td>
+                      <td><span className="product-price">K{product.price}</span></td>
                       <td>
-                        <span className="product-name">{product.name}</span>
+                        <div className="quantity-editor">
+                          <input
+                            type="number"
+                            min="0"
+                            value={product.quantity}
+                            onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                            onBlur={() => handleQuantityBlur(product)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') e.target.blur();
+                            }}
+                            className="quantity-input"
+                            disabled={savingQuantity === product.id}
+                          />
+                          {savingQuantity === product.id && (
+                            <span className="saving-indicator">⟳</span>
+                          )}
+                        </div>
                       </td>
-                      <td>
-                        <span className="product-type">{product.type}</span>
-                      </td>
-                      <td>
-                        <span className="product-price">K{product.price}</span>
-                      </td>
-                      <td>{product.quantity}</td>
                       <td>{getStatusBadge(product.status)}</td>
                       <td>
                         <div className="action-buttons">
-                         <Button 
-                          variant="secondary" 
-                          size="sm" 
-                          onClick={() => {
-                          setEditingProduct(product);
-                          setShowEditModal(true);
-                          }}
-                           >
-                         </Button>
-                        <Button 
-                          variant="danger" 
-                          size="sm" 
-                          onClick={() => handleDelete(product.id)}
-                          loading={deleting === product.id}
-                        >
-                          Delete
-                        </Button>
-                         </div>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => openEditModal(product)}
+                          >
+                            ✏️ Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDelete(product.id)}
+                            loading={deleting === product.id}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -229,75 +309,13 @@ const checkProfileComplete = async () => {
           </Card>
         )}
 
-
-
+        {/* ============ ADD PRODUCT MODAL ============ */}
         {showAddModal && (
           <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>➕ Add New Product</h2>
-                <button 
-                  className="modal-close"
-                  onClick={() => setShowAddModal(false)}
-                >
-
-        {showEditModal && editingProduct && (
-  <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
-    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-      <div className="modal-header">
-        <h2>✏️ Edit Product</h2>
-        <button className="modal-close" onClick={() => setShowEditModal(false)}>✕</button>
-      </div>
-      <form onSubmit={handleEditProduct}>
-        <Input
-          label="Product Name"
-          value={editingProduct.name}
-          onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
-          required
-        />
-        <div className="form-group">
-          <label className="input-label">Category</label>
-          <select
-            value={editingProduct.type}
-            onChange={(e) => setEditingProduct({...editingProduct, type: e.target.value})}
-            className="form-select"
-            required
-          >
-            <option value="vegetables">Vegetables</option>
-            <option value="fruits">Fruits</option>
-            <option value="grains">Grains</option>
-            <option value="dairy">Dairy</option>
-            <option value="meat">Meat</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div className="form-row">
-          <Input
-            label="Price (K)"
-            type="number"
-            value={editingProduct.price}
-            onChange={(e) => setEditingProduct({...editingProduct, price: e.target.value})}
-            required
-          />
-          <Input
-            label="Quantity"
-            type="number"
-            value={editingProduct.quantity}
-            onChange={(e) => setEditingProduct({...editingProduct, quantity: e.target.value})}
-            required
-          />
-        </div>
-        <div className="modal-actions">
-          <Button type="submit" loading={submitting}>Update Product</Button>
-          <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancel</Button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
-
-                  ✕
-                </button>
+                <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
               </div>
               <form onSubmit={handleAddProduct}>
                 <Input
@@ -307,9 +325,6 @@ const checkProfileComplete = async () => {
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   required
                 />
-
-                {/* Product image upload coming in future update */}
-
                 <div className="form-group">
                   <label className="input-label">Category</label>
                   <select
@@ -345,12 +360,65 @@ const checkProfileComplete = async () => {
                   />
                 </div>
                 <div className="modal-actions">
-                  <Button type="submit" loading={submitting}>
-                    Add Product
-                  </Button>
-                  <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-                    Cancel
-                  </Button>
+                  <Button type="submit" loading={submitting}>Add Product</Button>
+                  <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ============ EDIT PRODUCT MODAL ============ */}
+        {showEditModal && editingProduct && (
+          <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>✏️ Edit Product</h2>
+                <button className="modal-close" onClick={() => setShowEditModal(false)}>✕</button>
+              </div>
+
+              {editingProduct.status === 'approved' && (
+                <div className="edit-warning">
+                  ⚠️ Editing this product will reset its status to <strong>Pending</strong> for re-approval.
+                </div>
+              )}
+
+              <form onSubmit={handleEditProduct}>
+                <Input
+                  label="Product Name"
+                  value={editingProduct.name}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                  required
+                />
+                <div className="form-group">
+                  <label className="input-label">Category</label>
+                  <select
+                    value={editingProduct.type}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, type: e.target.value })}
+                    className="form-select"
+                    required
+                  >
+                    <option value="vegetables">Vegetables</option>
+                    <option value="fruits">Fruits</option>
+                    <option value="grains">Grains</option>
+                    <option value="dairy">Dairy</option>
+                    <option value="meat">Meat</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <Input
+                  label="Price (K)"
+                  type="number"
+                  value={editingProduct.price}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                  required
+                />
+                <p className="hint-text">
+                  💡 To update quantity, use the inline editor in the products table (no re-approval needed).
+                </p>
+                <div className="modal-actions">
+                  <Button type="submit" loading={submitting}>Save Changes</Button>
+                  <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancel</Button>
                 </div>
               </form>
             </div>

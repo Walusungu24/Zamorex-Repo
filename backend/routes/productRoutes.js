@@ -9,6 +9,7 @@ const {
   getMyProducts,
   removeProduct,
   updateProductController,
+  updateQuantityController,
 } = require("../controllers/productController");
 
 // Public routes (anyone can view products)
@@ -23,6 +24,15 @@ router.post(
   validateProduct,
   addProduct,
 );
+
+// Quick quantity update - does NOT trigger re-approval
+router.patch(
+  "/:id/quantity",
+  authMiddleware,
+  authorize("farmer"),
+  updateQuantityController,
+);
+
 router.put(
   "/:id",
   authMiddleware,

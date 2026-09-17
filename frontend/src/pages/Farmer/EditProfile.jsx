@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layouts/Navbar';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
 import API from '../../services/api';
 import './EditProfile.css';
+import BackButton from '../../components/common/BackButton';
 
 function EditProfile() {
-  const [profile, setProfile] = useState({
-    farm_name: '',
-    location: '',
-    whatsapp: '',
-    bio: '',
-    profile_picture: ''
-  });
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
@@ -27,42 +20,12 @@ function EditProfile() {
   const fetchProfile = async () => {
     try {
       const res = await API.get('/profiles/me');
-      if (res.data.profile) {
-        setProfile({
-          farm_name: res.data.profile.farm_name || '',
-          location: res.data.profile.location || '',
-          whatsapp: res.data.profile.whatsapp || '',
-          bio: res.data.profile.bio || '',
-          profile_picture: res.data.profile.profile_picture || ''
-        });
-      }
+      setProfile(res.data.profile);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Profile doesn't exist yet — that's fine, show empty state
+      console.log('No profile yet');
     }
     setLoading(false);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setSaving(true);
-
-    try {
-      await API.put('/profiles/me', profile);
-      setSuccess('Profile updated successfully!');
-      // Redirect to farmer dashboard after 2 seconds
-      setTimeout(() => {
-        window.location.href = '/farmer';
-      }, 2000);
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to update profile');
-    }
-    setSaving(false);
-  };
-
-  const handleChange = (e) => {
-    setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
   if (loading) {
@@ -71,88 +34,91 @@ function EditProfile() {
         <Navbar user={user} />
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Loading profile...</p>
+          <p>Loading your profile...</p>
         </div>
       </>
     );
   }
 
+  // If no profile exists yet, prompt to create one
+  if (!profile) {
+    return (
+      <>
+        <Navbar user={user} />
+        <div className="edit-profile-container container">
+          <BackButton to="/farmer" label="Back to Products" />
+          <div className="page-header">
+            <h1>👨‍🌾 Your <span>Profile</span></h1>
+            <p className="subtitle">Buyers will see this information when viewing your products</p>
+          </div>
+
+          <div className="empty-state">
+            <span className="empty-icon">📝</span>
+            <h3>You Haven't Created a Profile Yet</h3>
+            <p>Complete your profile so buyers can learn about your farm and contact you easily.</p>
+            <Button 
+              onClick={() => navigate('/farmer/profile/edit')} 
+              style={{ marginTop: '16px' }}
+            >
+              Create Profile
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Otherwise, show the profile view (like the buyer sees it)
   return (
     <>
       <Navbar user={user} />
-      <div className="edit-profile-container container">
-        <div className="page-header">
-          <h1>👨‍🌾 Edit Your <span>Profile</span></h1>
-          <p className="subtitle">Complete your profile to help buyers find you</p>
+      <div className="profile-view-container container">
+        <BackButton to="/farmer" label="Back to Products" />
+        <div className="profile-view-header-bar">
+          <h1>👨‍🌾 Your <span>Profile</span></h1>
+          <p className="subtitle">This is how buyers see your profile</p>
+          <Button onClick={() => navigate('/farmer/profile/edit')}>
+            ✏️ Edit Profile
+          </Button>
         </div>
 
-        <Card className="profile-form-card">
-          <form onSubmit={handleSubmit} className="profile-form">
-            {error && <div className="form-error">{error}</div>}
-            {success && <div className="form-success">{success}</div>}
-
-            <div className="form-section">
-              <h3>Farm Information</h3>
-              
-              <Input
-                label="Farm Name"
-                name="farm_name"
-                placeholder="e.g. Green Valley Farm"
-                value={profile.farm_name}
-                onChange={handleChange}
-              />
-
-              <Input
-                label="Farm Location"
-                name="location"
-                placeholder="e.g. Lusaka, Zambia"
-                value={profile.location}
-                onChange={handleChange}
-              />
-
-              <div className="form-group">
-                <label className="input-label">Bio </label>
-                <textarea
-                  name="bio"
-                  placeholder="Tell buyers about you, your farm, your farming practices, and what makes your produce special..."
-                  value={profile.bio}
-                  onChange={handleChange}
-                  className="form-textarea"
-                  rows="4"
-                />
+        <div className="farmer-profile-header">
+          <div className="farmer-avatar">
+            {profile.profile_picture ? (
+              <img src={profile.profile_picture} alt={user.name} />
+            ) : (
+              <div className="avatar-placeholder">
+                {user.name?.charAt(0) || 'F'}
+              </div>
+            )}
+          </div>
+          <div className="farmer-info">
+            <h1>{profile.farm_name || user.name}</h1>
+            <p className="farmer-name">👨‍🌾 {user.name}</p>
+            {profile.location && (
+              <p className="farmer-location">📍 {profile.location}</p>
+            )}
+            {profile.bio && (
+              <p className="farmer-bio">{profile.bio}</p>
+            )}
+            <div className="farmer-contact">
+              {profile.whatsapp && (
+                <div className="contact-detail">
+                  <span className="contact-label">💬 WhatsApp:</span>
+                  <span className="contact-value">{profile.whatsapp}</span>
+                </div>
+              )}
+              <div className="contact-detail">
+                <span className="contact-label">📞 Phone:</span>
+                <span className="contact-value">{user.phone}</span>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="form-section">
-              <h3>Contact Details</h3>
-
-              <div className="form-group">
-                <label className="input-label">WhatsApp Number <span className="optional-text">(preferred)</span></label>
-                <input
-                  type="tel"
-                  name="whatsapp"
-                  placeholder="Enter WhatsApp number with country code"
-                  value={profile.whatsapp}
-                  onChange={handleChange}
-                  className="form-input"
-                />
-                <p className="hint-text"> This will be displayed to buyers for easy contact</p>
-              </div>
-
-              {/* Image upload coming in future update */}
-              
-            </div>
-
-            <div className="form-actions">
-              <Button type="submit" loading={saving}>
-                Save Profile
-              </Button>
-              <Button variant="secondary" onClick={() => window.location.href = '/farmer'}>
-                Skip for Now
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <div className="profile-tip">
+          💡 <strong>Tip:</strong> Buyers see your farm name, location, bio, and contact details when they view your products.
+        </div>
       </div>
     </>
   );
