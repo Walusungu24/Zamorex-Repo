@@ -12,87 +12,111 @@ function BuyerDashboard() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [notifiedProduct, setNotifiedProduct] = useState(null);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [notifiedProduct, setNotifiedProduct] = useState(null);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+  // Debounce search input
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setDebouncedSearch(searchTerm);
-  }, 500);
-  return () => clearTimeout(timer);
-}, [searchTerm]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
+  // Fetch products when page or search changes
   useEffect(() => {
     fetchProducts();
-  }, [page]);
+  }, [page, debouncedSearch]);
 
   const fetchProducts = async () => {
-  setLoading(true);
-  try {
-    const res = await API.get(`/products?page=${page}&limit=12&search=${debouncedSearch}`);
-    setProducts(res.data.products || []);
-    setTotalPages(res.data.totalPages || 1);
-    setTotal(res.data.total || 0);
-  } catch (error) {
-    console.error('Error fetching products:', error);
-  }
-  setLoading(false);
-};
+    setLoading(true);
+    try {
+      const url = `/products?page=${page}&limit=12${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}`;
+      const res = await API.get(url);
+      setProducts(res.data.products || []);
+      setTotalPages(res.data.totalPages || 1);
+      setTotal(res.data.total || 0);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+    setLoading(false);
+  };
 
   const handleContactFarmer = (phone, productName) => {
     setNotifiedProduct(productName);
     if (phone) {
       window.location.href = `tel:${phone}`;
     } else {
-      alert(`Farmer's phone number: Contact farmer directly through the platform.`);
+      alert(`Farmer's phone number is not available.`);
     }
     setTimeout(() => setNotifiedProduct(null), 3000);
   };
 
-  if (loading) {
-    return (
-      <>
-        <Navbar user={user} />
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading fresh farm products...</p>
-        </div>
-      </>
-    );
-  }
+  const handleClearSearch = () => {
+    setSearchTerm('');
+  };
 
   return (
     <>
       <Navbar user={user} />
       <div className="buyer-container container">
-         <div className="page-header">
-      <div>
-        <h1>
-          Fresh <span className="farm-products">Farm Products</span>
-        </h1>
-        <p className="subtitle">
-          Browse locally grown produce from farmers near you ({products.length} of {total} products available)
-        </p>
-      </div>
+        <div className="page-header">
+          <div>
+            <h1>🛒 Fresh <span>Farm Products</span></h1>
+            <p className="subtitle">
+              Browse locally grown produce from farmers near you
+              {total > 0 && ` • ${total} products available`}
+            </p>
+          </div>
+        </div>
 
-      <div className="search-container">
-        <input
-          type="text"
-          placeholder=" Search products by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
-      </div>
-    </div>
+        {/* Search bar is ALWAYS visible, never unmounted */}
+        <div className="search-container">
+          <div className="search-wrapper">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search products by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button className="search-clear" onClick={handleClearSearch}>
+                ✕
+              </button>
+            )}
+          </div>
+          {debouncedSearch && !loading && (
+            <p className="search-results-text">
+              Showing results for: <strong>"{debouncedSearch}"</strong>
+            </p>
+          )}
+        </div>
 
-        {products.length === 0 ? (
+        {/* Only the products area shows loading state */}
+        {loading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading fresh farm products...</p>
+          </div>
+        ) : products.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">🌿</span>
-            <h3>No Products Available</h3>
-            <p>Check back later for fresh farm products from our farmers.</p>
+            <span className="empty-icon">{debouncedSearch ? '🔍' : '🌿'}</span>
+            <h3>{debouncedSearch ? 'No Products Found' : 'No Products Available'}</h3>
+            <p>
+              {debouncedSearch
+                ? `No products match "${debouncedSearch}". Try a different search term.`
+                : 'Check back later for fresh farm products from our farmers.'}
+            </p>
+            {debouncedSearch && (
+              <Button onClick={handleClearSearch} style={{ marginTop: '16px' }}>
+                Clear Search
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -100,32 +124,31 @@ function BuyerDashboard() {
               {products.map(product => (
                 <Card key={product.id} className="product-card">
                   <div className="product-content">
-                    {product.image_url && (
-                      <img src={product.image_url} alt={product.name} className="product-image" />
-                   )}
-                     <div className="product-header">
-                       <h3>{product.name}</h3>
-                     <span className="product-type">{product.type || 'Other'}</span>
+                    <div className="product-header">
+                      <h3>{product.name}</h3>
+                      <span className="product-type">{product.type}</span>
+                    </div>
+                    <div className="product-price">K{product.price}</div>
+                    <div className="product-meta">
+                      <span className="product-stock">📦 Stock: {product.quantity}</span>
+                      <span className="product-farmer">
+                        👨‍🌾 <Link to={`/farmer/${product.farmer_id}`} className="farmer-link">
+                          {product.farmer_name || 'Farmer'}
+                        </Link>
+                      </span>
+                    </div>
+                    <Button 
+                      fullWidth 
+                      onClick={() => handleContactFarmer(product.farmer_phone, product.name)}
+                    >
+                      📞 Contact Farmer
+                    </Button>
+                    {notifiedProduct === product.name && (
+                      <div className="contact-notification">
+                        Calling farmer...
+                      </div>
+                    )}
                   </div>
-                  <div className="product-price">K{product.price}</div>
-                  <div className="product-meta">
-                   <span className="product-stock">📦 Stock: {product.quantity}</span>
-                   <span className="product-farmer">
-                      👨‍🌾 <Link to={`/farmer/${product.farmer_id}`} className="farmer-link">
-                        {product.farmer_name || 'Farmer'}
-                     </Link>
-                 </span>
-               </div>
-               <Button fullWidth onClick={() => handleContactFarmer(product.farmer_phone, product.name)}>
-                📞 Contact Farmer
-               </Button>
-                </div>
-                   
-                     {notifiedProduct === product.name && (
-                       <div className="contact-notification">
-                            Calling farmer...
-                       </div>
-                     )}
                 </Card>
               ))}
             </div>

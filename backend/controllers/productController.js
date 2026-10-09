@@ -33,11 +33,18 @@ const addProduct = async (req, res) => {
 // Get all approved products with pagination and filtering
 const listProducts = async (req, res) => {
   try {
-    const { type, min_price, max_price, page = 1, limit = 20 } = req.query;
+    const {
+      type,
+      min_price,
+      max_price,
+      page = 1,
+      limit = 20,
+      search,
+    } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     let query = `
-      SELECT p.*, u.name as farmer_name 
+      SELECT p.*, u.name as farmer_name, u.phone as farmer_phone
       FROM products p
       JOIN users u ON p.farmer_id = u.id
       WHERE p.status = 'approved'
@@ -51,9 +58,15 @@ const listProducts = async (req, res) => {
       values.push(type);
     }
 
+    // Apply search filter (case-insensitive partial match)
+    if (search) {
+      query += ` AND p.name ILIKE $${paramCount++}`;
+      values.push(`%${search}%`);
+    }
+
     // Get total count for pagination
     const countQuery = query.replace(
-      "SELECT p.*, u.name as farmer_name",
+      "SELECT p.*, u.name as farmer_name, u.phone as farmer_phone",
       "SELECT COUNT(*) as total",
     );
     const countResult = await pool.query(countQuery, values);
