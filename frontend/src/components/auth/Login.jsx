@@ -29,11 +29,9 @@ function Login() {
     try {
       const res = await API.post('/users/login', formData);
       
-      // Save token and user data
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       
-      // Redirect based on role
       const role = res.data.user.role;
       if (role === 'admin') {
         navigate('/admin');
@@ -53,8 +51,8 @@ function Login() {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>🌾 Zamorex</h1>
-          <p>Welcome back! Please login to your account.</p>
+          <h1>ZAMOREX</h1>
+          <p>Welcome back. Please sign in to your account.</p>
         </div>
 
         {error && (
@@ -89,13 +87,13 @@ function Login() {
             fullWidth 
             loading={loading}
           >
-            Login
+            Sign In
           </Button>
         </form>
 
         <div className="auth-footer">
           <p>
-            Don't have an account? <a href="/register">Register</a>
+            Don't have an account? <a href="/register">Create one</a>
           </p>
         </div>
       </div>

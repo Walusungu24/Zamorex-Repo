@@ -17,7 +17,6 @@ function BuyerDashboard() {
   const [notifiedProduct, setNotifiedProduct] = useState(null);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
@@ -26,7 +25,6 @@ function BuyerDashboard() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch products when page or search changes
   useEffect(() => {
     fetchProducts();
   }, [page, debouncedSearch]);
@@ -65,7 +63,7 @@ function BuyerDashboard() {
       <div className="buyer-container container">
         <div className="page-header">
           <div>
-            <h1>🛒 Fresh <span>Farm Products</span></h1>
+            <h1>Fresh Farm Products</h1>
             <p className="subtitle">
               Browse locally grown produce from farmers near you
               {total > 0 && ` • ${total} products available`}
@@ -73,10 +71,8 @@ function BuyerDashboard() {
           </div>
         </div>
 
-        {/* Search bar is ALWAYS visible, never unmounted */}
         <div className="search-container">
           <div className="search-wrapper">
-            <span className="search-icon">🔍</span>
             <input
               type="text"
               placeholder="Search products by name..."
@@ -97,7 +93,6 @@ function BuyerDashboard() {
           )}
         </div>
 
-        {/* Only the products area shows loading state */}
         {loading ? (
           <div className="loading-container">
             <div className="loading-spinner"></div>
@@ -105,7 +100,6 @@ function BuyerDashboard() {
           </div>
         ) : products.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">{debouncedSearch ? '🔍' : '🌿'}</span>
             <h3>{debouncedSearch ? 'No Products Found' : 'No Products Available'}</h3>
             <p>
               {debouncedSearch
@@ -130,9 +124,9 @@ function BuyerDashboard() {
                     </div>
                     <div className="product-price">K{product.price}</div>
                     <div className="product-meta">
-                      <span className="product-stock">📦 Stock: {product.quantity}</span>
+                      <span className="product-stock">Stock: {product.quantity}</span>
                       <span className="product-farmer">
-                        👨‍🌾 <Link to={`/farmer/${product.farmer_id}`} className="farmer-link">
+                        <Link to={`/farmer/${product.farmer_id}`} className="farmer-link">
                           {product.farmer_name || 'Farmer'}
                         </Link>
                       </span>
@@ -141,7 +135,7 @@ function BuyerDashboard() {
                       fullWidth 
                       onClick={() => handleContactFarmer(product.farmer_phone, product.name)}
                     >
-                      📞 Contact Farmer
+                      Contact Farmer
                     </Button>
                     {notifiedProduct === product.name && (
                       <div className="contact-notification">
@@ -160,7 +154,7 @@ function BuyerDashboard() {
                   onClick={() => setPage(p => p - 1)} 
                   disabled={page === 1}
                 >
-                  ← Previous
+                  Previous
                 </Button>
                 <span className="pagination-info">
                   Page {page} of {totalPages}
@@ -170,7 +164,7 @@ function BuyerDashboard() {
                   onClick={() => setPage(p => p + 1)} 
                   disabled={page === totalPages}
                 >
-                  Next →
+                  Next
                 </Button>
               </div>
             )}

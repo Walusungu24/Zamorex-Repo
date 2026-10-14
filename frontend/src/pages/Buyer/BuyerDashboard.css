@@ -144,11 +144,12 @@
 
 .search-input {
   width: 100%;
-  max-width: 500px;
-  padding: 12px 18px;
+  padding: 14px 44px 14px 16px;
   border: 2px solid var(--gray-200);
   border-radius: var(--radius);
   font-size: 16px;
+  font-family: inherit;
+  background: white;
   transition: var(--transition);
 }
 

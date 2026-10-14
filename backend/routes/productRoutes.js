@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const { authMiddleware, authorize } = require("../middleware/authMiddleware");
-const { validateProduct } = require("../middleware/validation");
+const {
+  validateProduct,
+  validateProductUpdate,
+} = require("../middleware/validation");
 const {
   addProduct,
   listProducts,
@@ -37,7 +40,7 @@ router.put(
   "/:id",
   authMiddleware,
   authorize("farmer"),
-  validateProduct,
+  validateProductUpdate,
   updateProductController,
 );
 router.delete("/:id", authMiddleware, authorize("farmer"), removeProduct);

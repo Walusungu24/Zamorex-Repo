@@ -17,8 +17,8 @@ function FarmerDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [savingQuantity, setSavingQuantity] = useState(null);
-  const [originalQuantities, setOriginalQuantities] = useState({});
   const [editingProduct, setEditingProduct] = useState(null);
+  const [originalQuantities, setOriginalQuantities] = useState({});
   const [newProduct, setNewProduct] = useState({
     name: '',
     type: 'vegetables',
@@ -54,7 +54,6 @@ function FarmerDashboard() {
     }
   };
 
-  // ============ ADD PRODUCT ============
   const handleAddProduct = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -74,7 +73,6 @@ function FarmerDashboard() {
     setSubmitting(false);
   };
 
-  // ============ EDIT PRODUCT (name, type, price - requires re-approval) ============
   const openEditModal = (product) => {
     setEditingProduct({
       id: product.id,
@@ -105,68 +103,63 @@ function FarmerDashboard() {
     setSubmitting(false);
   };
 
-  // ============ QUICK QUANTITY UPDATE (no re-approval needed) ============
-const handleQuantityChange = (productId, value) => {
-  // Remember the original quantity when the user starts editing
-  setOriginalQuantities(prev => ({
-    ...prev,
-    [productId]: prev[productId] !== undefined 
-      ? prev[productId] 
-      : products.find(p => p.id === productId)?.quantity
-  }));
+  const handleQuantityChange = (productId, value) => {
+    setOriginalQuantities(prev => ({
+      ...prev,
+      [productId]: prev[productId] !== undefined 
+        ? prev[productId] 
+        : products.find(p => p.id === productId)?.quantity
+    }));
 
-  setProducts(products.map(p =>
-    p.id === productId ? { ...p, quantity: value } : p
-  ));
-};
+    setProducts(products.map(p =>
+      p.id === productId ? { ...p, quantity: value } : p
+    ));
+  };
 
-const handleQuantityBlur = async (product) => {
-  const newQuantity = parseInt(product.quantity);
-  const originalQuantity = parseInt(originalQuantities[product.id]);
+  const handleQuantityBlur = async (product) => {
+    const newQuantity = parseInt(product.quantity);
+    const originalQuantity = parseInt(originalQuantities[product.id]);
 
-  // Validate
-  if (isNaN(newQuantity) || newQuantity < 0) {
-    alert('Quantity must be a valid number');
-    await fetchProducts();
-    setOriginalQuantities(prev => {
-      const copy = { ...prev };
-      delete copy[product.id];
-      return copy;
-    });
-    return;
-  }
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      alert('Quantity must be a valid number');
+      await fetchProducts();
+      setOriginalQuantities(prev => {
+        const copy = { ...prev };
+        delete copy[product.id];
+        return copy;
+      });
+      return;
+    }
 
-  // Skip only if truly unchanged
-  if (newQuantity === originalQuantity) {
-    setOriginalQuantities(prev => {
-      const copy = { ...prev };
-      delete copy[product.id];
-      return copy;
-    });
-    return;
-  }
+    if (newQuantity === originalQuantity) {
+      setOriginalQuantities(prev => {
+        const copy = { ...prev };
+        delete copy[product.id];
+        return copy;
+      });
+      return;
+    }
 
-  setSavingQuantity(product.id);
-  try {
-    await API.patch(`/products/${product.id}/quantity`, {
-      quantity: newQuantity
-    });
-    await fetchProducts();
-  } catch (error) {
-    console.error('Error updating quantity:', error);
-    alert('Failed to update quantity: ' + (error.response?.data?.message || error.message));
-    await fetchProducts();
-  } finally {
-    setSavingQuantity(null);
-    setOriginalQuantities(prev => {
-      const copy = { ...prev };
-      delete copy[product.id];
-      return copy;
-    });
-  }
-};
+    setSavingQuantity(product.id);
+    try {
+      await API.patch(`/products/${product.id}/quantity`, {
+        quantity: newQuantity
+      });
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      alert('Failed to update quantity');
+      await fetchProducts();
+    } finally {
+      setSavingQuantity(null);
+      setOriginalQuantities(prev => {
+        const copy = { ...prev };
+        delete copy[product.id];
+        return copy;
+      });
+    }
+  };
 
-  // ============ DELETE PRODUCT ============
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     setDeleting(id);
@@ -189,18 +182,6 @@ const handleQuantityBlur = async (product) => {
     return <span className={`status-badge ${className}`}>{label}</span>;
   };
 
-  if (loading) {
-    return (
-      <>
-        <Navbar user={user} />
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading your products...</p>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <Navbar user={user} />
@@ -208,7 +189,6 @@ const handleQuantityBlur = async (product) => {
         {showProfilePrompt && (
           <div className="profile-prompt">
             <div className="profile-prompt-content">
-              <span className="prompt-icon">👨‍🌾</span>
               <div>
                 <h3>Complete Your Profile</h3>
                 <p>Add your farm details, location, and WhatsApp number so buyers can find and contact you easily.</p>
@@ -225,21 +205,25 @@ const handleQuantityBlur = async (product) => {
 
         <div className="page-header">
           <div>
-            <h1>🌾 My <span>Products</span></h1>
+            <h1>My Products</h1>
             <p className="subtitle">Manage your farm products and track their status</p>
           </div>
           <Button onClick={() => setShowAddModal(true)}>
-            + Add Product
+            Add Product
           </Button>
         </div>
 
-        {products.length === 0 ? (
+        {loading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading your products...</p>
+          </div>
+        ) : products.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">🌱</span>
             <h3>No Products Yet</h3>
-            <p>Start by adding your first product to the marketplace!</p>
+            <p>Start by adding your first product to the marketplace.</p>
             <Button onClick={() => setShowAddModal(true)} style={{ marginTop: '16px' }}>
-              + Add Your First Product
+              Add Your First Product
             </Button>
           </div>
         ) : (
@@ -251,7 +235,7 @@ const handleQuantityBlur = async (product) => {
                     <th>Name</th>
                     <th>Type</th>
                     <th>Price</th>
-                    <th>Quantity <span className="th-hint">(editable)</span></th>
+                    <th>Quantity</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -277,7 +261,7 @@ const handleQuantityBlur = async (product) => {
                             disabled={savingQuantity === product.id}
                           />
                           {savingQuantity === product.id && (
-                            <span className="saving-indicator">⟳</span>
+                            <span className="saving-indicator">Saving</span>
                           )}
                         </div>
                       </td>
@@ -289,7 +273,7 @@ const handleQuantityBlur = async (product) => {
                             size="sm"
                             onClick={() => openEditModal(product)}
                           >
-                            ✏️ Edit
+                            Edit
                           </Button>
                           <Button
                             variant="danger"
@@ -309,12 +293,11 @@ const handleQuantityBlur = async (product) => {
           </Card>
         )}
 
-        {/* ============ ADD PRODUCT MODAL ============ */}
         {showAddModal && (
           <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>➕ Add New Product</h2>
+                <h2>Add New Product</h2>
                 <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
               </div>
               <form onSubmit={handleAddProduct}>
@@ -368,18 +351,17 @@ const handleQuantityBlur = async (product) => {
           </div>
         )}
 
-        {/* ============ EDIT PRODUCT MODAL ============ */}
         {showEditModal && editingProduct && (
           <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>✏️ Edit Product</h2>
+                <h2>Edit Product</h2>
                 <button className="modal-close" onClick={() => setShowEditModal(false)}>✕</button>
               </div>
 
               {editingProduct.status === 'approved' && (
                 <div className="edit-warning">
-                  ⚠️ Editing this product will reset its status to <strong>Pending</strong> for re-approval.
+                  Editing this product will reset its status to Pending for re-approval.
                 </div>
               )}
 
@@ -414,7 +396,7 @@ const handleQuantityBlur = async (product) => {
                   required
                 />
                 <p className="hint-text">
-                  💡 To update quantity, use the inline editor in the products table (no re-approval needed).
+                  To update quantity, use the inline editor in the products table.
                 </p>
                 <div className="modal-actions">
                   <Button type="submit" loading={submitting}>Save Changes</Button>

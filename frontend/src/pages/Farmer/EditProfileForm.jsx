@@ -4,11 +4,12 @@ import Navbar from '../../components/layouts/Navbar';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import BackButton from '../../components/common/BackButton';
 import API from '../../services/api';
 import './EditProfile.css';
-import BackButton from '../../components/common/BackButton';
 
 function EditProfileForm() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({
     farm_name: '',
     location: '',
@@ -21,7 +22,6 @@ function EditProfileForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProfile();
@@ -40,7 +40,7 @@ function EditProfileForm() {
         });
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.log('No profile yet');
     }
     setLoading(false);
   };
@@ -53,18 +53,14 @@ function EditProfileForm() {
 
     try {
       await API.put('/profiles/me', profile);
-      setSuccess('Profile updated successfully!');
+      setSuccess('Profile updated successfully. Redirecting...');
       setTimeout(() => {
-      window.location.href = '/farmer/profile';  // ← changed from /farmer
+        navigate('/farmer/profile');
       }, 1500);
-      // Redirect to farmer dashboard after 2 seconds
-      setTimeout(() => {
-        window.location.href = '/farmer';
-      }, 2000);
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to update profile');
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleChange = (e) => {
@@ -87,10 +83,11 @@ function EditProfileForm() {
     <>
       <Navbar user={user} />
       <div className="edit-profile-container container">
-        <BackButton to="/farmer" label="Back to Products" />
+        <BackButton to="/farmer/profile" label="Back to Profile" />
+        
         <div className="page-header">
-          <h1>👨‍🌾 Edit Your <span>Profile</span></h1>
-          <p className="subtitle">Complete your profile to help buyers find you</p>
+          <h1>Edit Your Profile</h1>
+          <p className="subtitle">Complete your profile to help buyers find and contact you</p>
         </div>
 
         <Card className="profile-form-card">
@@ -118,10 +115,10 @@ function EditProfileForm() {
               />
 
               <div className="form-group">
-                <label className="input-label">Bio </label>
+                <label className="input-label">Bio / About Your Farm</label>
                 <textarea
                   name="bio"
-                  placeholder="Tell buyers about you, your farm, your farming practices, and what makes your produce special..."
+                  placeholder="Tell buyers about your farm, your farming practices, and what makes your produce special..."
                   value={profile.bio}
                   onChange={handleChange}
                   className="form-textarea"
@@ -134,7 +131,9 @@ function EditProfileForm() {
               <h3>Contact Details</h3>
 
               <div className="form-group">
-                <label className="input-label">WhatsApp Number <span className="optional-text">(preferred)</span></label>
+                <label className="input-label">
+                  WhatsApp Number <span className="optional-text">(preferred)</span>
+                </label>
                 <input
                   type="tel"
                   name="whatsapp"
@@ -143,19 +142,25 @@ function EditProfileForm() {
                   onChange={handleChange}
                   className="form-input"
                 />
-                <p className="hint-text"> This will be displayed to buyers for easy contact</p>
+                <p className="hint-text">This will be displayed to buyers for easy contact.</p>
               </div>
 
-              {/* Image upload coming in future update */}
-              
+              <Input
+                label="Profile Picture URL"
+                name="profile_picture"
+                placeholder="Paste image URL from Cloudinary or Imgur"
+                value={profile.profile_picture}
+                onChange={handleChange}
+              />
+              <p className="hint-text">Upload an image to Cloudinary or Imgur and paste the URL here.</p>
             </div>
 
             <div className="form-actions">
               <Button type="submit" loading={saving}>
                 Save Profile
               </Button>
-              <Button variant="secondary" onClick={() => window.location.href = '/farmer'}>
-                Skip for Now
+              <Button variant="secondary" onClick={() => navigate('/farmer/profile')}>
+                Cancel
               </Button>
             </div>
           </form>

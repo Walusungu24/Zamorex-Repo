@@ -37,6 +37,10 @@
 
 .brand-text {
   color: var(--primary);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 .navbar-toggle {

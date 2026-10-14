@@ -57,7 +57,7 @@ function AdminPanel() {
   };
 
   const handleDeleteUser = async (id) => {
-    if (!window.confirm('⚠️ Are you sure you want to delete this user? This action cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
     try {
       await API.delete(`/admin/users/${id}`);
       await fetchData();
@@ -66,35 +66,14 @@ function AdminPanel() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone.includes(searchTerm)
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.phone.includes(searchTerm)
   );
 
-  const getRoleIcon = (role) => {
-    const icons = {
-      admin: '👑',
-      farmer: '🌾',
-      buyer: '🛒'
-    };
-    return icons[role] || '👤';
-  };
-
-  const getRoleBadgeClass = (role) => {
+  const getRoleClass = (role) => {
     return `role-badge role-${role}`;
   };
-
-  if (loading) {
-    return (
-      <>
-        <Navbar user={user} />
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading dashboard...</p>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -102,7 +81,7 @@ function AdminPanel() {
       <div className="admin-container container">
         <div className="page-header">
           <div>
-            <h1>Admin <span>Dashboard</span></h1>
+            <h1>Admin Dashboard</h1>
             <p className="subtitle">Manage products and users across the platform</p>
           </div>
           <div className="admin-stats">
@@ -122,7 +101,6 @@ function AdminPanel() {
             className={`tab ${activeTab === 'pending' ? 'active' : ''}`}
             onClick={() => setActiveTab('pending')}
           >
-            <span className="tab-icon">📋</span>
             Pending Approvals
             {pendingProducts.length > 0 && (
               <span className="tab-badge">{pendingProducts.length}</span>
@@ -132,7 +110,6 @@ function AdminPanel() {
             className={`tab ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
-            <span className="tab-icon">👥</span>
             Manage Users
             <span className="tab-badge">{users.length}</span>
           </button>
@@ -140,11 +117,15 @@ function AdminPanel() {
 
         {activeTab === 'pending' && (
           <>
-            {pendingProducts.length === 0 ? (
+            {loading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading pending products...</p>
+              </div>
+            ) : pendingProducts.length === 0 ? (
               <div className="empty-state">
-                <span className="empty-icon">✅</span>
-                <h3>All Clear!</h3>
-                <p>No products are currently pending approval. Everything is approved!</p>
+                <h3>All Clear</h3>
+                <p>No products are currently pending approval.</p>
               </div>
             ) : (
               <div className="pending-grid">
@@ -154,7 +135,7 @@ function AdminPanel() {
                       <div className="pending-header">
                         <div className="pending-title">
                           <h3>{product.name}</h3>
-                          <span className="pending-badge">⏳ Pending Review</span>
+                          <span className="pending-badge">Pending Review</span>
                         </div>
                         <span className="pending-id">#{product.id}</span>
                       </div>
@@ -183,7 +164,7 @@ function AdminPanel() {
                           loading={actionLoading === product.id}
                           className="approve-btn"
                         >
-                          ✅ Approve
+                          Approve
                         </Button>
                         <Button 
                           variant="danger" 
@@ -191,7 +172,7 @@ function AdminPanel() {
                           loading={actionLoading === product.id}
                           className="reject-btn"
                         >
-                          ❌ Reject
+                          Reject
                         </Button>
                       </div>
                     </div>
@@ -206,10 +187,9 @@ function AdminPanel() {
           <div className="users-section">
             <div className="users-toolbar">
               <div className="search-wrapper">
-                <span className="search-icon">🔍</span>
                 <input
                   type="text"
-                  placeholder="     Search by name or phone..."
+                  placeholder="Search by name or phone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -231,42 +211,41 @@ function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map(user => (
-                      <tr key={user.id}>
+                    {filteredUsers.map(u => (
+                      <tr key={u.id}>
                         <td>
                           <div className="user-cell">
                             <span className="user-avatar-md">
-                              {user.name?.charAt(0) || 'U'}
+                              {u.name?.charAt(0) || 'U'}
                             </span>
-                            <span className="user-name">{user.name}</span>
+                            <span className="user-name">{u.name}</span>
                           </div>
                         </td>
-                        <td className="user-phone">{user.phone}</td>
+                        <td className="user-phone">{u.phone}</td>
                         <td>
-                          <span className={getRoleBadgeClass(user.role)}>
-                            {getRoleIcon(user.role)} {user.role}
+                          <span className={getRoleClass(u.role)}>
+                            {u.role}
                           </span>
                         </td>
                         <td className="user-joined">
-                          {new Date(user.created_at).toLocaleDateString('en-GB', {
+                          {new Date(u.created_at).toLocaleDateString('en-GB', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric'
                           })}
                         </td>
                         <td>
-                          {user.role !== 'admin' && (
+                          {u.role !== 'admin' ? (
                             <Button 
                               variant="danger" 
                               size="sm" 
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteUser(u.id)}
                               className="delete-user-btn"
                             >
-                              🗑️ Delete
+                              Delete
                             </Button>
-                          )}
-                          {user.role === 'admin' && (
-                            <span className="admin-protected">🔒 Protected</span>
+                          ) : (
+                            <span className="admin-protected">Protected</span>
                           )}
                         </td>
                       </tr>

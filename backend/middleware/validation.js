@@ -53,4 +53,26 @@ const validateProduct = (req, res, next) => {
   next();
 };
 
-module.exports = { validateRegister, validateLogin, validateProduct };
+// Product update validation (quantity handled separately via inline editor)
+const validateProductUpdate = (req, res, next) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).max(100).required(),
+    type: Joi.string()
+      .valid("vegetables", "fruits", "grains", "dairy", "meat", "other")
+      .required(),
+    price: Joi.number().positive().required(),
+  });
+
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+  next();
+};
+
+module.exports = {
+  validateRegister,
+  validateLogin,
+  validateProduct,
+  validateProductUpdate,
+};

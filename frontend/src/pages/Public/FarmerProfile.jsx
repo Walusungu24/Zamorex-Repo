@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import Navbar from '../../components/layouts/Navbar';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import BackButton from '../../components/common/BackButton';
 import API from '../../services/api';
 import './FarmerProfile.css';
 
@@ -57,11 +58,10 @@ function FarmerProfile() {
         <Navbar user={user} />
         <div className="container">
           <div className="empty-state">
-            <span className="empty-icon">🔍</span>
             <h3>Farmer Not Found</h3>
-            <p>The farmer you're looking for doesn't exist.</p>
+            <p>The farmer you're looking for doesn't exist or has been removed.</p>
             <Link to="/buyer">
-              <Button>Back to Marketplace</Button>
+              <Button style={{ marginTop: '16px' }}>Back to Marketplace</Button>
             </Link>
           </div>
         </div>
@@ -73,7 +73,7 @@ function FarmerProfile() {
     <>
       <Navbar user={user} />
       <div className="farmer-profile-container container">
-        <Link to="/buyer" className="back-link">← Back to Marketplace</Link>
+        <BackButton to="/buyer" label="Back to Marketplace" />
 
         <div className="farmer-profile-header">
           <div className="farmer-avatar">
@@ -87,9 +87,9 @@ function FarmerProfile() {
           </div>
           <div className="farmer-info">
             <h1>{farmer.farm_name || farmer.name}</h1>
-            <p className="farmer-name">👨‍🌾 {farmer.name}</p>
+            <p className="farmer-name">{farmer.name}</p>
             {farmer.location && (
-              <p className="farmer-location">📍 {farmer.location}</p>
+              <p className="farmer-location">{farmer.location}</p>
             )}
             {farmer.bio && (
               <p className="farmer-bio">{farmer.bio}</p>
@@ -97,12 +97,12 @@ function FarmerProfile() {
             <div className="farmer-contact">
               {farmer.whatsapp && (
                 <Button onClick={handleContactWhatsApp} className="whatsapp-btn">
-                  💬 WhatsApp
+                  Message on WhatsApp
                 </Button>
               )}
               {farmer.phone && (
                 <Button variant="secondary" onClick={handleCall}>
-                  📞 Call
+                  Call Farmer
                 </Button>
               )}
             </div>

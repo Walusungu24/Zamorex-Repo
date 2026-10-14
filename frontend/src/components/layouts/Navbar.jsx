@@ -13,14 +13,13 @@ function Navbar({ user }) {
 
   const getRoleDisplay = (role) => {
     const labels = {
-      admin: '👑 Admin',
-      farmer: '🌾 Farmer',
-      buyer: '🛒 Buyer'
+      admin: 'Admin',
+      farmer: 'Farmer',
+      buyer: 'Buyer'
     };
     return labels[role] || role;
   };
 
-  // Farmers can click their name to view/edit profile
   const isFarmer = user?.role === 'farmer';
   const profilePath = isFarmer ? '/farmer/profile' : null;
 
@@ -40,8 +39,7 @@ function Navbar({ user }) {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-brand">
-          <span className="brand-icon">🌾</span>
-          <span className="brand-text">Zamorex</span>
+          <span className="brand-text">ZAMOREX</span>
         </Link>
 
         <button 
@@ -68,7 +66,7 @@ function Navbar({ user }) {
           )}
           
           <button className="navbar-logout" onClick={handleLogout}>
-            <span>🚪</span> Logout
+            Logout
           </button>
         </div>
       </div>
