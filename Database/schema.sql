@@ -1,27 +1,4 @@
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    phone VARCHAR(20) UNIQUE NOT NULL,
-    role VARCHAR(10) CHECK (role IN ('farmer', 'buyer')) NOT NULL,
-    password TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-
-CREATE TABLE products (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    type VARCHAR(50),
-    price DECIMAL(10,2) NOT NULL,
-    quantity INTEGER NOT NULL,
-    farmer_id INTEGER,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (farmer_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-
--- Create users table
+-- Create users table with 'admin' included in the role check constraint
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -47,9 +24,8 @@ CREATE TABLE IF NOT EXISTS products (
 INSERT INTO users (name, phone, role, password) 
 VALUES ('Admin', '0000000000', 'admin', '$2b$10$YourHashedPasswordHere');
 
-
 -- Create farmer_profiles table
-CREATE TABLE farmer_profiles (
+CREATE TABLE IF NOT EXISTS farmer_profiles (
     id SERIAL PRIMARY KEY,
     farmer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     farm_name VARCHAR(100),
@@ -64,7 +40,12 @@ CREATE TABLE farmer_profiles (
 );
 
 -- Add indexes
-CREATE INDEX idx_farmer_profiles_farmer_id ON farmer_profiles(farmer_id);
+CREATE INDEX IF NOT EXISTS idx_farmer_profiles_farmer_id ON farmer_profiles(farmer_id);
 
--- Add profile_completed flag to users table for quick check
-ALTER TABLE users ADD COLUMN profile_completed BOOLEAN DEFAULT FALSE;
+-- Add profile_completed flag to users table for quick check (wrapped to avoid errors if it already exists)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' and column_name='profile_completed') THEN
+        ALTER TABLE users ADD COLUMN profile_completed BOOLEAN DEFAULT FALSE;
+    END IF;
+END $$;
