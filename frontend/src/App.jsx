@@ -10,6 +10,7 @@ import FarmerProfile from './pages/Public/FarmerProfile';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import './styles/global.css';
 import EditProfileForm from './pages/Farmer/EditProfileForm';
+import TermsAndConditions from './pages/Public/TermsAndConditions';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<Navigate to="/login" />} />
         

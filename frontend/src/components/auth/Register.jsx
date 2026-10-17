@@ -30,13 +30,11 @@ function Register() {
     setError('');
     setSuccess('');
 
-    // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    // Validate password length
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
@@ -45,12 +43,10 @@ function Register() {
     setLoading(true);
 
     try {
-      // Remove confirmPassword before sending
       const { confirmPassword, ...registerData } = formData;
-      
       await API.post('/users/register', registerData);
       
-      setSuccess('Registration successful! Redirecting to login...');
+      setSuccess('Account created successfully. Redirecting to login...');
       setTimeout(() => {
         navigate('/login');
       }, 2000);
@@ -65,7 +61,7 @@ function Register() {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>🌾 Zamorex</h1>
+          <h1>ZAMOREX</h1>
           <p>Create your account to get started.</p>
         </div>
 
@@ -103,7 +99,7 @@ function Register() {
           />
 
           <div className="form-group">
-            <label className="input-label">I want to register as a...</label>
+            <label className="input-label">I want to register as a</label>
             <select
               name="role"
               value={formData.role}
@@ -111,8 +107,8 @@ function Register() {
               className="form-select"
               required
             >
-              <option value="buyer">Buyer - I want to buy products</option>
-              <option value="farmer">Farmer - I want to sell products</option>
+              <option value="buyer">Buyer — I want to buy products</option>
+              <option value="farmer">Farmer — I want to sell products</option>
             </select>
           </div>
 
@@ -136,6 +132,13 @@ function Register() {
             required
           />
 
+          <div className="terms-checkbox">
+  <input type="checkbox" required id="terms" />
+  <label htmlFor="terms">
+    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms and Conditions</a> and Data Privacy Policy.
+  </label>
+</div>
+
           <Button 
             type="submit" 
             fullWidth 
@@ -147,7 +150,7 @@ function Register() {
 
         <div className="auth-footer">
           <p>
-            Already have an account? <a href="/login">Login</a>
+            Already have an account? <a href="/login">Sign in</a>
           </p>
         </div>
       </div>
