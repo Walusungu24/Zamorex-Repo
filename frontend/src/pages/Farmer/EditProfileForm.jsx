@@ -146,9 +146,9 @@ function EditProfileForm() {
               </div>
 
               <Input
-                label="Profile Picture URL"
+                label="Profile Picture URL (OPTIONAL)"
                 name="profile_picture"
-                placeholder="Paste image URL from Cloudinary or Imgur"
+                placeholder=""
                 value={profile.profile_picture}
                 onChange={handleChange}
               />
