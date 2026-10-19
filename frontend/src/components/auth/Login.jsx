@@ -91,9 +91,12 @@ function Login() {
           </Button>
         </form>
 
-        <div className="auth-footer">
+                <div className="auth-footer">
           <p>
             Don't have an account? <a href="/register">Create one</a>
+          </p>
+          <p className="support-link-wrapper">
+            Need help? <a href="mailto:support@zamorex.com?subject=Zamorex%20Support%20Request">Contact Support</a>
           </p>
         </div>
       </div>
