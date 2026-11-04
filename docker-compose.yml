@@ -1,0 +1,44 @@
+
+services:
+  # 1. The Database
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: zamorex_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5433:5432" # Exposed on 5433 locally to avoid conflict with your local postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  # 2. The Backend API
+  backend_api:
+    build: ./backend
+    container_name: zamorex_api
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres_db
+      - DB_PORT=5432
+      - FRONTEND_URL=http://localhost
+    env_file:
+      - .env
+    depends_on:
+      - postgres_db
+
+  # 3. The Frontend
+  frontend_app:
+    build: ./frontend
+    container_name: zamorex_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend_api
+
+volumes:
+  postgres_data:
