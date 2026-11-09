@@ -1,23 +1,16 @@
-# Build stage
-FROM node:20-alpine AS build
+FROM node:18-slim
 
 WORKDIR /app
 
+# 1. Copy only package files first
 COPY package*.json ./
 
-RUN npm install
+# 2. Install dependencies (this creates the correct Linux binaries)
+RUN npm install --omit=dev
 
+# 3. Copy the rest of your code (your .dockerignore prevents node_modules from being copied)
 COPY . .
 
-# Set the API URL for the build step
-ENV VITE_API_URL=http://localhost:5000/api
-RUN npm run build
+EXPOSE 5000
 
-# Production stage
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "server.js"]

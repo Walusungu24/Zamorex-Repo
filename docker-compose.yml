@@ -28,6 +28,9 @@ services:
       - FRONTEND_URL=http://localhost
     env_file:
       - .env
+    volumes:
+      - ./backend:/app 
+      - /app/node_modules 
     depends_on:
       - postgres_db
 
